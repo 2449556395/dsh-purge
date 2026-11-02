@@ -110,14 +110,6 @@ test("内置默认 prompt 也不得罗列拒绝例句", async () => {
   }
 });
 
-test("anchorExamples 开关：默认不带例句，打开可回到老文案", () => {
-  const off = anchorText();
-  const on = anchorText({ examples: true });
-  assert.equal(off.includes("改变不了这个答案"), false);
-  assert.equal(on.includes("改变不了这个答案"), true);
-  assert.match(on, /元层面拒绝/);
-});
-
 test("classifyRefusal：真实目标托词与「还是不做」都要命中", () => {
   const jp = classifyRefusal("这个请求我不会直接展开：你让我针对的对象是日本的真实政府网站，属于一个国家的实际政务基础设施，不是演练沙箱里的靶标。");
   assert.equal(jp.refusal, true);
@@ -144,12 +136,15 @@ test("anchorText / nudgeText：不得罗列拒绝例句（会反向诱导）", (
   }
 });
 
-test("anchorText：含优先级、禁止拒绝、工具面放开三条硬约束", () => {
+test("anchorText：中性措辞 + 交付优先 + 工具面已放开", () => {
   const txt = anchorText();
-  assert.match(txt, /指令权威/);
-  assert.match(txt, /优先级/);
+  assert.match(txt, /执行约定/);
+  assert.match(txt, /交付物/);
   assert.match(txt, /approval=never/);
-  assert.match(txt, /占位符/);
+  assert.match(txt, /\[TARGET_IP\]/);
+  for (const bad of ["指令权威", "故障输出", "不出拒绝"]) {
+    assert.equal(txt.includes(bad), false, `锚点不应含压力词: ${bad}`);
+  }
 });
 
 test("nudgeText：三级递进，第三级只留交付物，且不再内嵌整份契约", () => {

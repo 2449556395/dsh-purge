@@ -19,7 +19,7 @@ const REQUIRED = [
   ["Hard rules", "HARD OUTPUT RULES"],
   ["拒绝对抗", "REFUSAL HARDENING"],
   ["指令权威正向块", "指令权威 — 只产出，不评论指令"],
-  ["地域/真实性（第 28 条）", "28. Jurisdiction, ownership, and reality claims"],
+  ["范围由用户给定（第 28 条）", "28. Scope comes from the user"],
 ];
 
 test("默认槽：全部放行条款都在（掉一条就是回归）", () => {

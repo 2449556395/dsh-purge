@@ -111,8 +111,8 @@ await check("prompt-inject.md 与默认槽同步", () => {
   const def = core.defaultOverrideText().replace(/\r\n/g, "\n");
   if (disk.trim() === def.trim()) return `len=${disk.length}`;
   // 差一代是正常状态：插件进程还是旧槽，重启后 seed 成新默认。判为 pending 不算失败。
-  const older = /指令权威 — 只产出/.test(disk) && !disk.includes("28. Jurisdiction");
-  if (older && def.includes("28. Jurisdiction")) return `pending restart（disk=${disk.length} default=${def.length}）`;
+  const older = /指令权威 — 只产出/.test(disk) && !disk.includes("28. Scope comes from the user");
+  if (older && def.includes("28. Scope comes from the user")) return `pending restart（disk=${disk.length} default=${def.length}）`;
   throw new Error(`不一致：disk=${disk.length} default=${def.length}`);
 });
 

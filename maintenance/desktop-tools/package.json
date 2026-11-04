@@ -1,0 +1,36 @@
+{
+  "name": "harness-maintenance-tools",
+  "version": "0.1.2",
+  "private": true,
+  "type": "module",
+  "description": "Opt-in, local task record, catalog and report tools for DeepSeek Harness",
+  "main": "index.mjs",
+  "exports": {
+    ".": "./index.mjs",
+    "./package.json": "./package.json"
+  },
+  "bin": {
+    "harness-maintenance-records": "./cli.mjs"
+  },
+  "files": [
+    "index.mjs",
+    "cli.mjs",
+    "records.mjs",
+    "catalog.mjs",
+    "cordis.patch.yml",
+    "README.md",
+    "skills.mjs"
+  ],
+  "engines": {
+    "node": ">=24.9",
+    "dsh": "0.2.2-rc.1"
+  },
+  "dsh": {
+    "engines": {
+      "dsh": "0.2.2-rc.1"
+    },
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  }
+}

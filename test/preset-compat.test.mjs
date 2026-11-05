@@ -30,11 +30,11 @@ test('host metadata detection distinguishes reviewed merged and legacy package e
   fs.mkdirSync(pkgDir,{recursive:true});
   const anchor=path.join(root,'package.json');
   const metadata=path.join(pkgDir,'package.json');
-  for (const version of ['0.2.1-rc.2','0.2.1-rc.3','0.2.1-rc.4','0.2.1-rc.5','0.2.2-alpha.2','0.3.0']) {
+  for (const version of ['0.2.1-rc.2','0.2.1-rc.3','0.2.1-rc.4','0.2.1-rc.5','0.2.2-alpha.2','0.2.2-rc.1','0.3.0']) {
     const exports={'.':'./index.js','./package.json':'./package.json'};
     if (version.startsWith('0.2.1')) exports['./list-agents']='./list.js';
     fs.writeFileSync(metadata,JSON.stringify({name:'@deepseek-ai/dsh-tool-subagent-control',version,exports}));
-    assert.equal(detectPresetCompatibility([anchor]).combinedSubagentControl,version==='0.2.2-alpha.2');
+    assert.equal(detectPresetCompatibility([anchor]).combinedSubagentControl,['0.2.2-alpha.2','0.2.2-rc.1'].includes(version));
   }
   assert.equal(detectPresetCompatibility([]).combinedSubagentControl,false);
 });

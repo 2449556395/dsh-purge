@@ -125,11 +125,14 @@ await check("用户改稿保留逻辑", async () => {
   return "keep 哨兵 OK";
 });
 
-// 12. rc.5 目标声明
-await check("dshTarget=0.2.1-rc.5", () => {
+// 12. 宿主目标声明：主字段是当前适配版本，且必须在 dshTargets 里（0.2.2-rc.1 起多版本）
+await check("dshTarget 声明一致", () => {
   const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
-  expect(pkg.dshTarget === "0.2.1-rc.5", `dshTarget=${pkg.dshTarget}`);
-  return pkg.dshTarget;
+  const targets = Array.isArray(pkg.dshTargets) ? pkg.dshTargets : [];
+  expect(pkg.dshTarget === "0.2.2-rc.1", `dshTarget=${pkg.dshTarget}`);
+  expect(targets.includes(pkg.dshTarget), `dshTargets 不含 ${pkg.dshTarget}`);
+  for (const v of ["0.2.1-rc.5", "0.2.1-rc.2"]) expect(targets.includes(v), `dshTargets 丢回退版本 ${v}`);
+  return pkg.dshTarget + " / " + targets.join(",");
 });
 
 // 13. 移植模块在位

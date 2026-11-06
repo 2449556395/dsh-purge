@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>dsh-purge 代理池控制台</title>
+<style>
+:root{--bg:#0f1115;--panel:#161a21;--line:#2a2f3a;--text:#e6e8ee;--dim:#8b93a7;--ok:#3fb950;--warn:#d29922;--err:#f85149;--accent:#58a6ff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:13.5px/1.6 ui-monospace,SFMono-Regular,Consolas,monospace}
+header{position:sticky;top:0;z-index:5;display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 16px;background:#12151b;border-bottom:1px solid var(--line)}
+header strong{font-size:14px;letter-spacing:.3px}
+main{max-width:1080px;margin:0 auto;padding:16px;display:grid;gap:14px}
+section{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px}
+h2{margin:0 0 10px;font-size:13px;color:var(--dim);font-weight:600;letter-spacing:.6px;text-transform:uppercase}
+label{display:flex;gap:6px;align-items:center;color:var(--dim)}
+input,select,textarea,button{font:inherit;color:var(--text);background:#0d1016;border:1px solid var(--line);border-radius:7px;padding:6px 9px}
+input:focus,textarea:focus,select:focus{outline:1px solid var(--accent)}
+button{cursor:pointer;background:#1d2330}
+button:hover{border-color:var(--accent)}
+button.primary{background:#1f6feb;border-color:#1f6feb}
+button.danger{color:#ffb4ad;border-color:#5a2a2a}
+button:disabled{opacity:.45;cursor:not-allowed}
+table{width:100%;border-collapse:collapse}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+th{color:var(--dim);font-weight:500;font-size:12px}
+tr:last-child td{border-bottom:none}
+.badge{display:inline-block;padding:1px 7px;border-radius:999px;font-size:11px;border:1px solid var(--line)}
+.badge.on{color:var(--ok);border-color:#1f4d2b}
+.badge.off{color:var(--dim)}
+.badge.err{color:var(--err);border-color:#5a2a2a}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.actions{display:flex;gap:6px;flex-wrap:wrap}
+pre#log{margin:0;max-height:260px;overflow:auto;white-space:pre-wrap;color:var(--dim);font-size:12.5px}
+.hint{color:var(--dim);font-size:12px;margin:6px 0 0}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<header>
+  <strong>dsh-purge · 代理池控制台</strong>
+  <label>GUI 端口 <input id="port" size="6" value=""></label>
+  <button id="btnConnect" class="primary">连接</button>
+  <button id="btnRefresh">刷新</button>
+  <span id="state" class="badge off">未连接</span>
+</header>
+
+<main>
+  <section>
+    <h2>池状态</h2>
+    <div id="poolGrid" class="grid"></div>
+    <div class="row" style="margin-top:10px">
+      <button id="btnEnablePool">启用池</button>
+      <button id="btnDisablePool" class="danger">停用池</button>
+      <button id="btnPoolTest">测试全部节点</button>
+      <button id="btnPoolDisconnect">全部断开</button>
+    </div>
+    <p class="hint">池只作用于插件自身的 GitHub 查询与代理测试，不改系统 / 浏览器 / 模型 API 的代理。</p>
+  </section>
+
+  <section>
+    <h2>节点</h2>
+    <table>
+      <thead><tr><th>名称</th><th>协议</th><th>地址</th><th>状态</th><th>操作</th></tr></thead>
+      <tbody id="profiles"><tr><td colspan="5" style="color:var(--dim)">未连接</td></tr></tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>添加节点</h2>
+    <div class="grid">
+      <label>名称 <input id="pName" placeholder="local-7890"></label>
+      <label>协议 <select id="pProto"><option>socks5</option><option>http</option><option>https</option></select></label>
+      <label>主机 <input id="pHost" placeholder="127.0.0.1"></label>
+      <label>端口 <input id="pPort" placeholder="7890"></label>
+      <label>用户 <input id="pUser" placeholder="可选"></label>
+      <label>密码 <input id="pPass" type="password" placeholder="可选"></label>
+      <label>noProxy <input id="pNoProxy" placeholder="127.0.0.1,localhost"></label>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <button id="btnAdd" class="primary">保存节点</button>
+      <button id="btnTestDraft">只测试不保存</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>YAML 导入</h2>
+    <textarea id="yaml" rows="6" style="width:100%" placeholder="proxies:
+  - name: a
+    type: socks5
+    server: 127.0.0.1
+    port: 7890"></textarea>
+    <div class="row" style="margin-top:10px">
+      <button id="btnImportPool">导入到池</button>
+      <button id="btnImportConfig">当作单代理配置</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>日志</h2>
+    <pre id="log">就绪。填好端口后点「连接」。</pre>
+  </section>
+</main>
+
+<script>
+(() => {
+  const $ = (s) => document.querySelector(s);
+  const logEl = $('#log');
+  let base = '';
+
+  function log(msg, kind) {
+    const t = new Date().toLocaleTimeString();
+    const mark = kind === 'err' ? '✗' : kind === 'ok' ? '✓' : '·';
+    logEl.textContent += '\n[' + t + '] ' + mark + ' ' + msg;
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+  function setState(text, cls) {
+    const el = $('#state');
+    el.textContent = text;
+    el.className = 'badge ' + (cls || 'off');
+  }
+  function portGuess() {
+    const p = new URLSearchParams(location.search).get('port');
+    return p || location.port || '53380';
+  }
+  $('#port').value = portGuess();
+
+  async function api(op, extra) {
+    if (!base) throw new Error('还没连接：先填端口点「连接」');
+    const res = await fetch(base + '/redteam/api', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(Object.assign({ op }, extra || {})),
+    });
+    const text = await res.text();
+    let json;
+    try { json = text ? JSON.parse(text) : {}; } catch { throw new Error('返回不是 JSON: ' + text.slice(0, 160)); }
+    return json;
+  }
+
+  function render(pool) {
+    const eng = pool.engine || {};
+    const cells = [
+      ['启用', pool.enabled ? '<span class="badge on">on</span>' : '<span class="badge off">off</span>'],
+      ['自动连接', pool.autoConnect ? 'on' : 'off'],
+      ['当前节点', pool.activeId || '—'],
+      ['节点数', String((pool.profiles || []).length)],
+      ['内核', eng.available ? (eng.running ? '运行中' : '已找到') : '未找到'],
+      ['超时', (pool.timeoutMs || 0) + ' ms'],
+    ];
+    $('#poolGrid').innerHTML = cells.map(([k, v]) =>
+      '<div><div style="color:var(--dim);font-size:11px">' + k + '</div><div>' + v + '</div></div>').join('');
+
+    const rows = (pool.profiles || []).map((p) => {
+      const st = p.status || 'idle';
+      const cls = st === 'connected' ? 'on' : st === 'error' ? 'err' : 'off';
+      return '<tr><td>' + esc(p.name || '') + '</td><td>' + esc(p.protocol || '') + '</td><td>' +
+        esc((p.host || '') + ':' + (p.port || '')) + '</td><td><span class="badge ' + cls + '">' + st + '</span></td>' +
+        '<td class="actions">' +
+        '<button data-act="connect" data-id="' + esc(p.id) + '">连接</button>' +
+        '<button data-act="test" data-id="' + esc(p.id) + '">测试</button>' +
+        '<button data-act="delete" data-id="' + esc(p.id) + '" class="danger">删除</button>' +
+        '</td></tr>';
+    });
+    $('#profiles').innerHTML = rows.length ? rows.join('') :
+      '<tr><td colspan="5" style="color:var(--dim)">池里还没有节点</td></tr>';
+  }
+
+  function esc(v) {
+    return String(v).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  async function refresh() {
+    try {
+      const pool = await api('proxyPoolGet');
+      if (pool.ok === false) { log('读取失败: ' + (pool.error || 'unknown'), 'err'); return; }
+      render(pool);
+      setState('已连接', 'on');
+    } catch (e) { log('刷新失败: ' + e.message, 'err'); setState('断开', 'err'); }
+  }
+
+  $('#btnConnect').onclick = async () => {
+    base = 'http://127.0.0.1:' + ($('#port').value || '').trim();
+    log('连接 ' + base);
+    await refresh();
+  };
+  $('#btnRefresh').onclick = refresh;
+
+  async function savePool(patch) {
+    try {
+      const r = await api('proxyPoolSave', { settings: patch });
+      if (r.ok === false) log('保存失败: ' + (r.error || ''), 'err');
+      else log('池设置已保存: ' + JSON.stringify(patch), 'ok');
+      await refresh();
+    } catch (e) { log(e.message, 'err'); }
+  }
+  $('#btnEnablePool').onclick = () => savePool({ enabled: true });
+  $('#btnDisablePool').onclick = () => savePool({ enabled: false });
+
+  $('#btnPoolTest').onclick = async () => {
+    log('测试全部节点…');
+    try {
+      const r = await api('proxyPoolTest', {});
+      log('测试结果: ' + JSON.stringify(r.profiles || r).slice(0, 400), r.ok === false ? 'err' : 'ok');
+      await refresh();
+    } catch (e) { log(e.message, 'err'); }
+  };
+  $('#btnPoolDisconnect').onclick = async () => {
+    try { await api('proxyPoolDisconnect', {}); log('已断开全部', 'ok'); await refresh(); }
+    catch (e) { log(e.message, 'err'); }
+  };
+
+  function draft() {
+    return {
+      name: $('#pName').value.trim(),
+      protocol: $('#pProto').value,
+      host: $('#pHost').value.trim(),
+      port: Number($('#pPort').value),
+      username: $('#pUser').value,
+      password: $('#pPass').value,
+      noProxy: $('#pNoProxy').value,
+    };
+  }
+  $('#btnAdd').onclick = async () => {
+    const p = draft();
+    if (!p.host || !p.port) { log('主机和端口必填', 'err'); return; }
+    try {
+      const r = await api('proxyProfileSave', { profile: p });
+      if (r.ok === false) log('保存失败: ' + (r.error || ''), 'err');
+      else { log('节点已保存: ' + (p.name || p.host), 'ok'); $('#pPass').value = ''; }
+      await refresh();
+    } catch (e) { log(e.message, 'err'); }
+  };
+  $('#btnTestDraft').onclick = async () => {
+    const p = draft();
+    try {
+      const r = await api('proxyProfileTest', { profile: p });
+      log('测试: ' + JSON.stringify(r).slice(0, 400), r.ok === false ? 'err' : 'ok');
+    } catch (e) { log(e.message, 'err'); }
+  };
+
+  $('#btnImportPool').onclick = async () => {
+    try {
+      const r = await api('proxyPoolImport', { yaml: $('#yaml').value });
+      log('导入: 成功 ' + ((r.candidates || []).length) + ' 条' + (r.warnings && r.warnings.length ? '，警告 ' + r.warnings.length : ''), r.ok === false ? 'err' : 'ok');
+      await refresh();
+    } catch (e) { log(e.message, 'err'); }
+  };
+  $('#btnImportConfig').onclick = async () => {
+    try {
+      const r = await api('proxyConfigImport', { yaml: $('#yaml').value });
+      log('解析: ' + JSON.stringify(r).slice(0, 300), r.ok === false ? 'err' : 'ok');
+    } catch (e) { log(e.message, 'err'); }
+  };
+
+  document.addEventListener('click', async (ev) => {
+    const btn = ev.target.closest('button[data-act]');
+    if (!btn) return;
+    const act = btn.dataset.act, id = btn.dataset.id;
+    try {
+      if (act === 'connect') { await api('proxyProfileConnect', { id }); log('已连接 ' + id, 'ok'); }
+      if (act === 'test') { const r = await api('proxyProfileTest', { profile: { id } }); log('测试 ' + id + ': ' + JSON.stringify(r).slice(0, 300), r.ok === false ? 'err' : 'ok'); }
+      if (act === 'delete') { await api('proxyProfileDelete', { id }); log('已删除 ' + id, 'ok'); }
+      await refresh();
+    } catch (e) { log(e.message, 'err'); }
+  });
+})();
+</script>
+</body>
+</html>

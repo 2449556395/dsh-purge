@@ -65,3 +65,33 @@ ffuf / sqlmap / hydra / hashcat / frpc / suo5 / frida / adb / gitleaks / impacke
 
 模板位置：`D:\deepseek\nuclei-templates`（14154 个 yaml / 45.6 MB）
 nuclei 缓存索引：`D:\deepseek\tools\harness\cache\nuclei\index.gob`
+## 六、CFA 白名单的实际边界（2026-11-06 实测修正）
+
+管理员会话里执行过：
+
+```powershell
+Add-MpPreference -ControlledFolderAccessAllowedApplications 'D:\deepseek\tools\harness\bin\nuclei.exe'
+→ 'CFA allow added'
+```
+
+当时以为一劳永逸，**但退出管理员后 nuclei 又报 `mkdir ...\Temp\nucleiXXXX: Access is denied`**。
+结论：管理员进程本身绕过 CFA，那条白名单没有真正对普通权限生效。
+
+普通权限下的统一解法是重定向临时目录，而不是依赖白名单：
+
+```powershell
+. D:\deepseek\tools\harness\env.ps1     # TEMP/TMP/APPDATA 都指到 D 盘
+& .\nuclei.exe -tl | Measure-Object -Line # 期望 13742
+```
+
+`env.ps1` 放在 `D:\deepseek\tools\harness\env.ps1`，只影响当前终端会话。
+
+## 七、masscan 是 naabu 兼容层
+
+`bin\masscan.cmd` 不是 masscan，是 `tools\masscan_shim.py`：解析 masscan 常用参数后转调 `bin\naabu.exe`。
+naabu 一度缺失（shim 直接崩），2026-11-06 装了 v2.7.0。shim 已自行把子进程的 TEMP 指到 `harness\tmp`，
+所以 `masscan <target> -p<ports>` 在普通权限下可用：
+
+```
+masscan 127.0.0.1 -p55552,8787  →  127.0.0.1:55552
+```

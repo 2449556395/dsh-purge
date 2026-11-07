@@ -6682,6 +6682,99 @@ body[data-ds-dark-theme] .rt-scope-testing,.dshp-dock[data-theme="dusk"] .rt-sco
             h('button', { className: 'rt-btn', onClick: () => goto('report') }, '导出报告'))))
     }
 
+    /* 情报：知识库（POC/EXP）与本机 nuclei 模板检索。数据来自 /redteam/api 的 poc 与 template 两组 op。 */
+    function IntelTab(props) {
+      const eng = props.engagement
+      const [sub, setSub] = React.useState('kb')
+      const [q, setQ] = React.useState('')
+      const [busy, setBusy] = React.useState(false)
+      const [err, setErr] = React.useState(null)
+      const [kb, setKb] = React.useState(null)
+      const [tpl, setTpl] = React.useState(null)
+      const [msg, setMsg] = React.useState(null)
+
+      const run = () => {
+        setBusy(true)
+        setErr(null)
+        const done = (r) => {
+          if (!r || r.ok === false) { setErr((r && (r.error || r.message)) || '读取失败'); return }
+          if (sub === 'kb') setKb(r)
+          else setTpl(r)
+        }
+        const fail = (e) => setErr(String((e && e.message) || e))
+        const p = sub === 'kb'
+          ? api({ op: 'pocSearch', q, engagement: eng, limit: 100 })
+          : api({ op: 'templateSearch', q, limit: 50 })
+        p.then(done, fail).then(() => setBusy(false))
+      }
+      React.useEffect(() => { run() }, [sub])
+
+      const usePoc = (code) => {
+        api({ op: 'pocUse', id: code, code }).then((r) => {
+          setMsg(r && r.ok === false ? ('记录失败：' + (r.error || '')) : ('已记一次复用：' + code))
+          run()
+        }, (e) => setMsg('记录失败：' + String((e && e.message) || e)))
+      }
+
+      const subBtn = (id, label) => h('button', {
+        className: 'rt-btn' + (sub === id ? ' rt-btn-primary' : ''),
+        onClick: () => setSub(id),
+      }, label)
+
+      let body
+      if (err) body = h('div', { className: 'rt-err' }, err)
+      else if (busy) body = h('div', { className: 'rt-empty' }, '查询中…')
+      else if (sub === 'kb') {
+        const items = (kb && kb.items) || []
+        const stats = (kb && kb.stats) || null
+        body = h('div', null,
+          stats ? h('div', { style: { fontSize: 11.5, color: 'var(--dsw-alias-label-secondary)', marginBottom: 6 } },
+            '知识库 ' + (stats.total || 0) + ' 条，已验证 ' + (stats.verified || 0) + '，复用 ' + (stats.reused || 0)) : null,
+          items.length === 0
+            ? h('div', { className: 'rt-empty' }, q ? '没有命中' : '知识库还是空的：命中漏洞后用 redteam_poc_add 回填')
+            : h('table', { className: 'rt-table' },
+                h('thead', null, h('tr', null,
+                  h('th', null, '标题'), h('th', null, 'CVE'), h('th', null, '组件'), h('th', null, '验证'), h('th', null, '复用'), h('th', null, ''))),
+                h('tbody', null, items.map((x) => h('tr', { key: x.id },
+                  h('td', null, x.title || ''),
+                  h('td', null, x.cve || '-'),
+                  h('td', null, x.component || '-'),
+                  h('td', null, x.verified ? '✓' : '-'),
+                  h('td', null, String(x.hit_count || 0)),
+                  h('td', null, h('button', { className: 'rt-btn', onClick: () => usePoc(x.code || x.id) }, '记一次'))))))
+        )
+      } else {
+        const stats = tpl && tpl.total !== undefined ? tpl : null
+        const items = (tpl && tpl.items) || []
+        body = h('div', null,
+          stats ? h('div', { style: { fontSize: 11.5, color: 'var(--dsw-alias-label-secondary)', marginBottom: 6 } },
+            '本机模板 ' + (tpl.total || 0) + ' 条（CVE ' + (tpl.cve || 0) + '），命中 ' + items.length) : null,
+          items.length === 0
+            ? h('div', { className: 'rt-empty' }, q ? '没有命中，换个组件名或 CVE 编号' : '输入组件名 / CVE 检索 14k 条模板')
+            : h('table', { className: 'rt-table' },
+                h('thead', null, h('tr', null, h('th', null, '模板'), h('th', null, 'severity'), h('th', null, '路径'))),
+                h('tbody', null, items.map((t, i) => h('tr', { key: i },
+                  h('td', null, t.name || ''),
+                  h('td', null, t.severity || '-'),
+                  h('td', { style: { fontSize: 11.5 } }, 'nuclei -t ' + (t.path || ''))))))
+        )
+      }
+
+      return h('div', { className: 'rt-pane' },
+        h('div', { style: { display: 'flex', gap: 8, alignItems: 'center', marginBottom: 10, flexWrap: 'wrap' } },
+          subBtn('kb', '知识库'),
+          subBtn('tpl', '模板'),
+          h('input', {
+            className: 'rt-input', style: { flex: '1 1 220px' }, value: q,
+            placeholder: sub === 'kb' ? '标题 / CVE / 组件' : 'weblogic / CVE-2017-10271 / tomcat',
+            onChange: (e) => setQ(e.target.value),
+            onKeyDown: (e) => { if (e.key === 'Enter') run() },
+          }),
+          h('button', { className: 'rt-btn rt-btn-primary', disabled: busy, onClick: run }, busy ? '查询中…' : '检索')),
+        msg ? h('div', { style: { fontSize: 11.5, color: 'var(--dsw-alias-label-secondary)', marginBottom: 6 } }, msg) : null,
+        body)
+    }
+
     function ScoreTab(props) {
       const eng = props.engagement
       const refreshKey = props.refreshKey || 0
@@ -7866,6 +7959,7 @@ body[data-ds-dark-theme] .rt-scope-testing,.dshp-dock[data-theme="dusk"] .rt-sco
         ['overview', '概览'],
         ['assets', '资产'], ['findings', '漏洞'], ['chain', '攻击链'], ['scores', '得分'],
         ['sessions', '入口'],
+        ['intel', '情报'],
         ['env', '环境'], ['agents', '智能体'], ['report', '报告'],
       ]
       const full = isFullWindow()
@@ -7908,7 +8002,8 @@ body[data-ds-dark-theme] .rt-scope-testing,.dshp-dock[data-theme="dusk"] .rt-sco
               }),
               h('button', { className: 'rt-btn rt-btn-primary', disabled: creating, onClick: () => openEngagement() },
                 creating ? '创建中…' : '创建靶标'))))
-      } else if (st.tab === 'overview') body = h(OverviewTab, { engagement: eng, snapshot: snapshot, refreshKey: refreshKey, onGoto: (tab) => setSt(Object.assign({}, st, { tab })) })
+      } else if (st.tab === 'intel') body = h(IntelTab, { engagement: eng, refreshKey: refreshKey })
+      else if (st.tab === 'overview') body = h(OverviewTab, { engagement: eng, snapshot: snapshot, refreshKey: refreshKey, onGoto: (tab) => setSt(Object.assign({}, st, { tab })) })
       else if (st.tab === 'assets') body = h(AssetsTab, { engagement: eng, snapshot: snapshot, refreshKey: refreshKey, onRefresh: refreshAll, onData: () => loadSnapshot(eng) })
       else if (st.tab === 'guide') body = h(GuideTab, { engagement: eng })
       else if (st.tab === 'testing') body = h(AssetsTab, { engagement: eng, snapshot: snapshot, refreshKey: refreshKey, onRefresh: refreshAll, onData: () => loadSnapshot(eng) })

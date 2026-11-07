@@ -95,3 +95,42 @@ naabu 一度缺失（shim 直接崩），2026-11-06 装了 v2.7.0。shim 已自�
 ```
 masscan 127.0.0.1 -p55552,8787  →  127.0.0.1:55552
 ```
+## 八、攻防工具补充（2026-11-07）
+
+补齐后新增：
+
+| 工具 | 版本/来源 | 位置 | 做什么 |
+|---|---|---|---|
+| interactsh-client | v1.4.1 | `bin\interactsh-client.exe` | OOB 带外基础设施，盲注/SSRF/XXE 的实锤手段（之前完全没有） |
+| gobuster | latest | `bin\gobuster.exe` | 目录/DNS/vhost 爆破（ffuf 之外的第二种口径） |
+| dalfox | v3.2.4 | `bin\dalfox.exe` | XSS 扫描与验证（DOM/反射/存储，支持 --blind 接 interactsh） |
+| jwt_tool | 主分支 | `tools\jwt_tool\jwt_tool.py` | JWT 六类缺陷（alg=none / 弱密钥 / 算法混淆 / kid 注入 / jku / 声明篡改） |
+| certipy-ad | PyPI | `python -m certipy` | AD CS 证书攻击（ESC1-ESC8） |
+
+```powershell
+# 用法示例
+. D:\deepseek\tools\harness\env.ps1
+interactsh-client -v                                  # 拿 OAST_DOMAIN
+dalfox url "http://TARGET/?q=1" --blind OAST_DOMAIN
+gobuster dir -u http://TARGET -w WORDLIST -t 40
+python D:\deepseek\tools\jwt_tool\jwt_tool.py TOKEN -M at
+certipy-ad find -u user@DOMAIN -p pass -dc-ip DC_IP -vulnerable
+```
+
+**仍缺**：metasploit（要 Ruby，本机无）、nikto（要 Perl）、whatweb（要 Ruby）。
+替代路径：MSF 的常用模块可用 impacket + 手工 exp 覆盖；whatweb 用 `httpx -tech-detect` + nuclei 指纹模板；nikto 用 nuclei 的 `-tags nikto` 等价模板。
+
+## 九、技能库（skills/redteam）
+
+2026-11-07 从 28 条扩到 34 条，新增覆盖此前完全空白的攻击面：
+
+```
+web-injection.md   SQL/NoSQL/命令/模板注入；sqlmap 分档、OOB 盲注、WAF 降速与 tamper
+ssrf-xxe.md        SSRF 协议表、云元数据、Redis 经 gopher 打 cron、XXE 外带文件
+auth-attack.md     JWT 六连、IDOR 三态判据、逻辑绕过清单、验证码与限速对抗
+ad-attack.md       无凭据枚举、Kerberoast/AS-REP、AD CS(ESC1/ESC8)、ACL 滥用
+privesc.md         Windows/Linux 提权清单、SeImpersonate 土豆、SUID/capabilities
+payload-c2.md      反弹 shell 族、通道选型(suo5/chisel/frpc)、内存加载、清理规范
+```
+
+同步：仓库 `skills/redteam/*.md` → 运行时 `$DSH_HOME/redteam/skills`（34 个）。

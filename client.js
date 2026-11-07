@@ -3662,7 +3662,7 @@ body[data-ds-dark-theme] .dshp-rewind-item span{color:var(--dsw-alias-label-tert
 		}
 
 		/* __DSH_PURGE_DRILL_BEGIN__ */
-		// 内嵌作战台（源码在 lib/redteam，已并进本插件）
+		// 内嵌演练台（源码在 lib/redteam，已并进本插件）
 		const __dshPurgeDrill = (() => {
 			var module = { exports: {} };
 			var exports = module.exports;
@@ -4328,7 +4328,7 @@ body[data-ds-dark-theme] .rt-scope-testing,.dshp-dock[data-theme="dusk"] .rt-sco
       body: JSON.stringify(req),
     }).then((res) => res.json())
 
-    let ui = { open: true, tab: 'assets' }
+    let ui = { open: true, tab: 'overview' }
     const subs = new Set()
     const setUI = (patch) => {
       ui = Object.assign({}, ui, patch)
@@ -6648,6 +6648,40 @@ body[data-ds-dark-theme] .rt-scope-testing,.dshp-dock[data-theme="dusk"] .rt-sco
         ),
       )
     }
+    /* 概览：作战台的第一屏——靶标、家底、五阶段、下一步。只用 snapshot，不发新请求。 */
+    function OverviewTab(props) {
+      const eng = props.engagement
+      const snapshot = props.snapshot || {}
+      const s = snapshot.stats || {}
+      const t = snapshot.tests || {}
+      const goto = props.onGoto || (() => {})
+      const card = (label, value, hint) => h('div', { className: 'rt-card', style: { flex: '1 1 160px', minWidth: 150 } },
+        h('div', { style: { fontSize: 11.5, color: 'var(--dsw-alias-label-secondary)' } }, label),
+        h('div', { style: { fontSize: 22, fontWeight: 700, lineHeight: 1.3 } }, String(value == null ? '-' : value)),
+        hint ? h('div', { style: { fontSize: 11, color: 'var(--dsw-alias-label-secondary)' } }, hint) : null)
+      if (!eng) {
+        return h('div', { className: 'rt-empty' }, '先在上方选择靶标，或输入单位名称创建')
+      }
+      return h('div', { className: 'rt-pane' },
+        h('div', { style: { display: 'flex', gap: 10, flexWrap: 'wrap' } },
+          card('资产', s.assets || 0, '存活 ' + (s.liveAssets || 0)),
+          card('漏洞', s.vulns || 0, '待测资产 ' + (t.untested || 0)),
+          card('已测 / 测试中', (t.tested || 0) + ' / ' + (t.testing || 0), '放弃 ' + ((t.abandoned || 0) + (t.blocked || 0)))),
+        h('div', { className: 'rt-card', style: { marginTop: 10 } },
+          h('h4', null, '五阶段'),
+          h('div', { style: { fontSize: 12.5, lineHeight: 1.9 } },
+            '① 信息收集 → ② 互联网资产权限 → ③ 边界突破 → ④ 内网资产权限 → ⑤ 靶标权限'),
+          h('div', { style: { fontSize: 11.5, color: 'var(--dsw-alias-label-secondary)', marginTop: 6 } },
+            '角色顺序：recon → assess → vuln-scan → exploit → internal；派活第一行写 redteamRole: <code>')),
+        h('div', { className: 'rt-card', style: { marginTop: 10 } },
+          h('h4', null, '下一步'),
+          h('div', { style: { display: 'flex', gap: 8, flexWrap: 'wrap' } },
+            h('button', { className: 'rt-btn rt-btn-primary', onClick: () => goto('assets') }, '看资产'),
+            h('button', { className: 'rt-btn', onClick: () => goto('findings') }, '看漏洞'),
+            h('button', { className: 'rt-btn', onClick: () => goto('sessions') }, '看入口'),
+            h('button', { className: 'rt-btn', onClick: () => goto('report') }, '导出报告'))))
+    }
+
     function ScoreTab(props) {
       const eng = props.engagement
       const refreshKey = props.refreshKey || 0
@@ -7827,11 +7861,12 @@ body[data-ds-dark-theme] .rt-scope-testing,.dshp-dock[data-theme="dusk"] .rt-sco
       }
 
       const stats = (snapshot && snapshot.stats) || {}
+      /* 顶层按「作战 / 入口 / 设置」收拢：config 不再和作战页平级，guide 移到概览 */
       const tabs = [
-        ['guide', '怎么用'],
-        ['assets', '资产测绘'], ['env', '环境适配'], ['agents', '智能体'], ['sessions', '会话隧道'],
-        ['findings', '漏洞战果'],
-        ['chain', '攻击链'], ['scores', '得分目标'], ['report', '报告'],
+        ['overview', '概览'],
+        ['assets', '资产'], ['findings', '漏洞'], ['chain', '攻击链'], ['scores', '得分'],
+        ['sessions', '入口'],
+        ['env', '环境'], ['agents', '智能体'], ['report', '报告'],
       ]
       const full = isFullWindow()
       const openFull = () => {
@@ -7873,7 +7908,8 @@ body[data-ds-dark-theme] .rt-scope-testing,.dshp-dock[data-theme="dusk"] .rt-sco
               }),
               h('button', { className: 'rt-btn rt-btn-primary', disabled: creating, onClick: () => openEngagement() },
                 creating ? '创建中…' : '创建靶标'))))
-      } else if (st.tab === 'assets') body = h(AssetsTab, { engagement: eng, snapshot: snapshot, refreshKey: refreshKey, onRefresh: refreshAll, onData: () => loadSnapshot(eng) })
+      } else if (st.tab === 'overview') body = h(OverviewTab, { engagement: eng, snapshot: snapshot, refreshKey: refreshKey, onGoto: (tab) => setSt(Object.assign({}, st, { tab })) })
+      else if (st.tab === 'assets') body = h(AssetsTab, { engagement: eng, snapshot: snapshot, refreshKey: refreshKey, onRefresh: refreshAll, onData: () => loadSnapshot(eng) })
       else if (st.tab === 'guide') body = h(GuideTab, { engagement: eng })
       else if (st.tab === 'testing') body = h(AssetsTab, { engagement: eng, snapshot: snapshot, refreshKey: refreshKey, onRefresh: refreshAll, onData: () => loadSnapshot(eng) })
       else if (st.tab === 'sessions') body = h(SessionTab, { engagement: eng, refreshKey: refreshKey })

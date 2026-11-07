@@ -1,4 +1,4 @@
-# 演练台工具逐个注释（redteam_* 全量）
+# 作战台工具逐个注释（redteam_* 全量）
 
 > 由 `lib/redteam/tools.js` 的 `name/description/parameters` 自动抽取生成，改完代码重跑脚本即可同步。
 

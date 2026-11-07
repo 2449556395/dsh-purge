@@ -128,7 +128,7 @@ window.__ModuleLoader__.load({ id: "dsh-purge", factory: (require) => {
 		const zh = {
 			nav: "规则设定",
 			"dock.clean": "清洗",
-			"dock.drill": "演练台",
+			"dock.drill": "作战台",
 			"dock.toggle": "dsh-purge",
 			"dock.newSession": "dsh-purge",
 			"dock.inSession": "dsh-purge",
@@ -139,7 +139,7 @@ window.__ModuleLoader__.load({ id: "dsh-purge", factory: (require) => {
 			"welcome.title": "用户须知",
 			"welcome.lead": "首次安装本插件时请阅读以下说明。确认后本窗不再弹出。",
 			"welcome.warn": "本插件免费开源。任何背着作者私自售卖、付费倒卖或借本项目盈利的行为，作者将依法追究法律责任。",
-			"welcome.body": "dsh-purge 是 DeepSeek Harness 的本机网络安全红队评测与清洗插件：在受控本机环境中调整提示词与补丁、做授权范围内的演练台操作。项目免费、非营利，源码仓库：",
+			"welcome.body": "dsh-purge 是 DeepSeek Harness 的本机网络安全红队评测与清洗插件：在受控本机环境中调整提示词与补丁、做授权范围内的作战台操作。项目免费、非营利，源码仓库：",
 			"welcome.repo": "https://github.com/YuJunZhiXue/dsh-purge",
 			"welcome.ban1": "禁止将本项目用于未授权的网络攻击、入侵、窃取数据、破坏系统或任何违法犯罪。",
 			"welcome.ban2": "禁止商业售卖、付费倒卖、黑灰产牟利，以及隐瞒作者的营利性再分发。",
@@ -147,18 +147,18 @@ window.__ModuleLoader__.load({ id: "dsh-purge", factory: (require) => {
 			"welcome.bans": "禁止事项",
 			"welcome.check": "我已阅读并理解上述用户须知，同意合法合规使用。",
 			"welcome.ok": "我已知晓并继续",
-			"auth.title": "演练台授权确认",
-			"auth.lead": "清洗不需要这一步。第一次进入演练台，或打开全面浏览，都要先完成本窗。",
-			"auth.warn": "安全警告：演练台只用于你有权管理的本机、离线靶标，或已书面授权的演练环境。未经授权的渗透、攻击、窃取和破坏一律禁止。",
+			"auth.title": "作战台授权确认",
+			"auth.lead": "清洗不需要这一步。第一次进入作战台，或打开全面浏览，都要先完成本窗。",
+			"auth.warn": "安全警告：作战台只用于你有权管理的本机、离线靶标，或已书面授权的演练环境。未经授权的渗透、攻击、窃取和破坏一律禁止。",
 			"auth.hint.wait": "请阅读声明。{n} 秒后才能勾选。",
 			"auth.hint.scroll": "倒计时已结束。请把声明滚到文末，再勾选。",
 			"auth.hint.check": "倒计时已结束。请勾选全部三项。",
 			"auth.check.read": "我已读完《安全与禁止违法声明》，并认可其中的全部条款。",
 			"auth.check.scope": "我确认只用在本机已授权环境、离线靶标或合规演练中。",
-			"auth.check.ban": "我确认禁止任何违法用途。未完成本授权，不得使用演练台。",
+			"auth.check.ban": "我确认禁止任何违法用途。未完成本授权，不得使用作战台。",
 			"auth.no": "暂不进入",
 			"auth.ok": "确认授权",
-			"auth.ok.tab": "确认授权并进入演练台",
+			"auth.ok.tab": "确认授权并进入作战台",
 			"auth.ok.full": "确认授权并全面浏览",
 			"auth.ok.env": "确认授权并打开环境适配",
 			"envGate.title": "环境还没配好",
@@ -486,7 +486,7 @@ window.__ModuleLoader__.load({ id: "dsh-purge", factory: (require) => {
 		const en = {
 			nav: "Rules",
 			"dock.clean": "Clean",
-			"dock.drill": "Drill",
+			"dock.drill": "Ops",
 			"dock.toggle": "dsh-purge",
 			"dock.newSession": "dsh-purge",
 			"dock.inSession": "dsh-purge",
@@ -3662,7 +3662,7 @@ body[data-ds-dark-theme] .dshp-rewind-item span{color:var(--dsw-alias-label-tert
 		}
 
 		/* __DSH_PURGE_DRILL_BEGIN__ */
-		// 内嵌演练台（源码在 lib/redteam，已并进本插件）
+		// 内嵌作战台（源码在 lib/redteam，已并进本插件）
 		const __dshPurgeDrill = (() => {
 			var module = { exports: {} };
 			var exports = module.exports;
@@ -3675,7 +3675,7 @@ body[data-ds-dark-theme] .dshp-rewind-item span{color:var(--dsw-alias-label-tert
     const h = React.createElement
 
     /*
-     * 演练台自己是一块浮动窗：position:fixed，用 left/top/width/height 放。
+     * 作战台自己是一块浮动窗：position:fixed，用 left/top/width/height 放。
      * 不给官方 frame 加 padding，不改官方输入框的宽度。嵌在清洗面板里时走 .rt-embedded。
      */
     const CSS = `
@@ -6618,7 +6618,7 @@ body[data-ds-dark-theme] .rt-scope-testing,.dshp-dock[data-theme="dusk"] .rt-sco
       ]
       return h('div', { className: 'rt-pane' },
         h('div', { className: 'rt-card' },
-          h('h4', null, '演练台五步'),
+          h('h4', null, '作战台五步'),
           h('ol', { style: { margin: '6px 0 0 18px', fontSize: 12.5, lineHeight: 1.9 } },
             steps.map((s, i) => h('li', { key: i }, s))),
           h('div', { style: { fontSize: 11.5, color: 'var(--dsw-alias-label-secondary)', marginTop: 8 } },
@@ -7909,7 +7909,7 @@ body[data-ds-dark-theme] .rt-scope-testing,.dshp-dock[data-theme="dusk"] .rt-sco
         (full || embedded) ? null : h('div', { className: 'rt-resize-c', title: '拖动调整大小', onMouseDown: startResizeCorner }),
         h('div', { className: 'rt-head', onMouseDown: (full || embedded) ? undefined : startDrag, title: (full || embedded) ? undefined : '按住拖动面板' },
           embedded ? null : h('div', { className: 'rt-title' }, h('span', { className: 'rt-dot' }),
-            full ? '演练台 · 全面浏览' : '演练台',
+            full ? '作战台 · 全面浏览' : '作战台',
             full ? h('span', { className: 'rt-tag', style: { marginLeft: 6 } }, '独立窗口') : null),
           h('select', {
             className: 'rt-input rt-eng-select',
@@ -8027,7 +8027,7 @@ body[data-ds-dark-theme] .rt-scope-testing,.dshp-dock[data-theme="dusk"] .rt-sco
 		}
 
 		function readDrillAuth() {
-			/* 【内部限制已解除】演练台恒为已授权：不再查 localStorage、不再等服务端 grant */
+			/* 【内部限制已解除】作战台恒为已授权：不再查 localStorage、不再等服务端 grant */
 			return true;
 		}
 		function setDrillAuthLocal(ok) {
@@ -8094,7 +8094,7 @@ body[data-ds-dark-theme] .rt-scope-testing,.dshp-dock[data-theme="dusk"] .rt-sco
 				}
 				return;
 			}
-			/* 未授权：直接切到演练台页签并弹出授权窗（不再停在清洗页，避免像「没触发」） */
+			/* 未授权：直接切到作战台页签并弹出授权窗（不再停在清洗页，避免像「没触发」） */
 			setDock({ open: true, tab: "drill", authOpen: true, pending: pending });
 		}
 
@@ -8474,7 +8474,7 @@ body[data-ds-dark-theme] .rt-scope-testing,.dshp-dock[data-theme="dusk"] .rt-sco
 					requestDrillEnv();
 					return true;
 				}
-				/* 已授权过：只弹精简环境适配窗，不再自动拉开整块演练台 */
+				/* 已授权过：只弹精简环境适配窗，不再自动拉开整块作战台 */
 				setOpen(true);
 				return true;
 			}, [refresh]);

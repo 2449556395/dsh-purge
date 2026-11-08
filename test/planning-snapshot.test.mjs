@@ -1,13 +1,13 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { DatabaseSync } from 'node:sqlite'
-import { RedteamStore } from '../lib/redteam/store-core.js'
+import { RedteamStore, dispatch } from '../lib/redteam/store-core.js'
 import { reviewCandidateQueue, reviewScoring } from '../lib/redteam/score-triage.js'
 
 function fixture() {
   const db = new DatabaseSync(':memory:')
   db.exec([
-    'CREATE TABLE asset (id INTEGER PRIMARY KEY, ip TEXT, state TEXT, test_status TEXT, priority TEXT, segment_cidr TEXT)',
+    'CREATE TABLE asset (id INTEGER PRIMARY KEY, ip TEXT, state TEXT, test_status TEXT, priority TEXT, segment_cidr TEXT, test_notes TEXT, test_surface TEXT, test_updated_at TEXT)',
     'CREATE TABLE vuln (id INTEGER PRIMARY KEY, asset_id INTEGER, title TEXT, severity TEXT, status TEXT, evidence TEXT, gained TEXT, cve TEXT, target TEXT)',
     'CREATE TABLE http_evidence (id INTEGER PRIMARY KEY, vuln_id INTEGER, label TEXT, method TEXT, url TEXT, status INTEGER, request TEXT, response TEXT, note TEXT, captured_by TEXT, captured_at TEXT)',
     'CREATE INDEX idx_http_evidence_vuln ON http_evidence(vuln_id)',
@@ -103,3 +103,35 @@ test('vulnerability task ID is directly queryable beyond first page, with consis
     db.close()
   }
 })
+
+test('taskBrief shows factual active and blocked notes alongside evidence gaps', () => {
+  const { db } = fixture()
+  const store = {
+    db: () => db,
+    planningSnapshot: RedteamStore.prototype.planningSnapshot,
+    testStats: RedteamStore.prototype.testStats,
+    taskBrief: RedteamStore.prototype.taskBrief,
+  }
+  try {
+    db.prepare("UPDATE asset SET test_status='testing', test_notes=?, test_updated_at=? WHERE id=4")
+      .run('[time] started\n[time] checking services', '2026-11-08T08:00:00Z')
+    db.prepare("UPDATE asset SET test_status='blocked', test_notes=?, test_surface=? WHERE id=5")
+      .run('[time] requires access approval', 'service unreachable')
+    const result = dispatch(store, { op: 'taskBrief', engagement: 'lab' })
+    assert.equal(result.ok, true)
+    assert.equal(result.engagement, 'lab')
+    assert.equal(result.active[0].id, 4)
+    assert.equal(result.active[0].note, '[time] checking services')
+    assert.equal(result.blocked[0].id, 5)
+    assert.equal(result.blocked[0].note, '[time] requires access approval')
+    assert.equal(result.counts.blocked, 1)
+    assert.equal(result.counts.ready, 1)
+    assert.equal(result.counts.needs_evidence, 1102)
+    assert.equal(result.suggestion.target, 'vuln #1')
+    assert.equal(result.suggestion.tab, 'findings')
+    assert.match(result.note, /只读核查建议/)
+  } finally {
+    db.close()
+  }
+})
+

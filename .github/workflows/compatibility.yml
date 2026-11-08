@@ -34,4 +34,4 @@ jobs:
         shell: bash
         run: |
           export DSH_COMPAT_HOST_ROOT="$GITHUB_WORKSPACE/.scratch/hosts/${{ matrix.host }}"
-          node --test
+          node --test test/*.test.* maintenance/*.test.mjs maintenance/desktop-tools/*.test.mjs

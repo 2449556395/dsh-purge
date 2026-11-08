@@ -4,7 +4,7 @@
 
 <h1 align="center">⚔️ DeepSeek Harness cybersecurity red-team tool (dsh-purge)</h1>
 
-<p align="center"><strong>Version 1.1.81</strong></p>
+<p align="center"><strong>Version 1.1.92-wxcvm.1</strong></p>
 
 <p align="center">
   <em>DeepSeek Harness jailbreak: every model, swap prompts per model. Default prompt for 小码酱. Please star ⭐ If you build on this, see Attribution required.</em>
@@ -29,11 +29,11 @@
   <a href="README.md">English</a> | <a href="README.zh-CN.md">中文</a>
 </p>
 
-## A note from the author
+## Original author and branch notes
 
 People have been selling this open-source work in the open. After that, the author was asked to come in and talk. No need to spell out the rest. Read between the lines.
 
-From now on the **public internet is closed**. The open-source build only allows **local lab IPs**: loopback and RFC1918. Domains are resolved first (including hosts); every answer must be private or loopback. A hosts trick that points `.lab` at a public IP, a failed lookup, or a mixed public answer is blocked. **Game cheats are forbidden** (aimbot, wallhack, memory edits against a game, anti-cheat bypass); the prompt and the session gate both stop them. This build does not ship the skill library or the knowledge base.
+Branch maintainer note (not the original author's words): **this branch no longer describes local labs or private IPs as its only permitted target scope.** Security assessments may cover systems you own or have explicit written authorization to test, whether public or private. IP ranges, domain suffixes, or a chat message alone do not establish authorization. Original attribution requirements remain in effect.
 
 **The original build may not be resold.** Charging for it, skinning it, or hawking it in groups is not allowed. Forks are fine, but **you must attribute** and name the source: [YuJunZhiXue/dsh-purge](https://github.com/YuJunZhiXue/dsh-purge). Hide the source or pass it off as your own, and you are on the other side.
 
@@ -65,7 +65,7 @@ Harness does more than forward a prompt. It rewrites prompts, approval gates, sa
 |---|---|
 | **dsh-purge dock** | A button beside the session title opens the right dock. Two pages: Clean and Drill |
 | **Clean** | Grouped patch status, Apply / Restore / Uninstall, prompt editor, multiple rule sets |
-| **Drill** | Built into the stable release. After authorization: assets and the local environment. This build does not ship skills or the knowledge base. Local lab only |
+| **Drill** | Authorized asset, evidence, intelligence and task overview; not restricted to local subnets |
 | **Host policy** | Default copy, permission policy, and tool limits. Official capabilities stay. No second invented identity |
 | **Obedience hardening** | Re-anchors the instruction contract on step 1 of every turn, and auto-corrects refusals/hedges with an escalating follow-up (up to 3 tries) |
 | **On start** | Checks and reapplies. After npm overwrites `node_modules`, you do not hand-edit files |
@@ -124,10 +124,10 @@ This repo is [Apache License 2.0](./LICENSE). Forks and redistributions must kee
 **Zero-tolerance statement:** This project opposes and forbids any illegal activity. The authors do not support, encourage, or assist unauthorized network attacks, exploit use, data theft, unlawful intrusion into computer information systems, or generation of illegal or prohibited content. **Anyone who uses this project for crime is solely responsible under the law. The authors have no liability.**
 
 1. **This repository contains no illegal material.** The published code, docs, patches, and default prompt are **not** malware, backdoors, unauthorized pentest kits, ransomware, credential-stuffing scripts, or attack payloads aimed at the public internet or third-party systems. The project does not supply illegal content and does not incite, organize, or assist crime.
-2. **Local official Harness only.** Security-eval patches and prompt injection run only on the **official DeepSeek Harness already installed on the user's machine** (`@deepseek-ai` packages, local profile / `$DSH_HOME`). The target is the user's own official local software, **not** someone else's website, server, account, or information system.
-3. **Eval patches do not attack the public internet.** Apply, inject, revert, and uninstall stay in local files and local processes. They **do not scan, probe, intrude, or send attack traffic to any public host or unauthorized system**. Do not use this project as a jump host against the public internet. If "check for updates" is on, the plugin may only contact this plugin's own GitHub repository to compare versions. That is **not** an attack on third-party systems and is **not** authorization to penetrate anything.
-4. **Lawful, controlled scope.** This project is an aid for red-team research and robustness evaluation on an **official Harness the user is entitled to administer**. **Do not run it against targets without the owner's lawful written authorization, public online systems, or production workloads.** Testing must stay on the **authorized local official Harness, offline local synthetic fixtures, authorized cybersecurity ranges, and compliant lab environments**.
-5. **The open-source build is local-lab only.** Attack tasks only allow loopback and RFC1918 addresses. Domains are resolved, then judged by IP; suffixes are not an allow list. A public IP, a name that resolves public, a failed lookup, or a hosts entry that points a lab name at the public internet is not an exception. A key, a password, a network range, a wildcard, or a claim made in the conversation does not add an exception. Game cheats are forbidden. This build does not ship the skill library or the knowledge base.
+2. **Local host modifications.** Patches and prompt injection only modify the official DeepSeek Harness installed on the user's own machine (`@deepseek-ai` packages, local profile / `$DSH_HOME`). Assessment targets in Drill are separately governed by documented authorization.
+3. **Patches versus assessment tasks.** Applying, reverting and uninstalling patches only modify local files and processes. Network assessment tasks must stay within expressly authorized targets, time windows and testing methods. An update check may reach the upstream/project repository and grants no additional testing authorization.
+4. **Lawful authorization.** Conduct assessments only on systems you own or for which the owner has provided explicit written authorization. Scope, timing, and allowed methods must be agreed in advance; public/private addressing and production status do not replace authorization. Unapproved probing, intrusion, data access and disruption are prohibited.
+5. **Target scope.** This branch does not treat loopback/RFC1918 as the only eligible networks, nor treat every public IP as inherently unauthorized. Verify the agreed target inventory before testing; a claim in chat or a domain suffix does not prove authorization. Game cheats remain prohibited.
 6. **Forbidden uses.** Users must not use this project, directly or indirectly, to violate the following (each must be followed; no excuse to evade):
    - <font color="red"><strong>Criminal Law of the People's Republic of China</strong></font>
    - <font color="red"><strong>Cybersecurity Law of the People's Republic of China</strong></font>
@@ -396,7 +396,7 @@ Plugin config lives in `cordis.patch.yml` (`postPrompt` is empty by default):
 
 **dsh-purge** sits beside the session title. It opens a right-hand dock with two pages: **Clean** and **Drill**. Switch **Light / Ink**. Patches are grouped; the count only includes items that actually applied. Rule sets sit in a list above the editor, with Enable and Delete on each row.
 
-The first time you open Drill you read the notice, wait out the countdown, scroll to the end, and check three boxes. Clean does not need that step. Drill is only for a host you manage, an offline target, or an exercise that already has written authorization.
+The first time you open Drill, read the notice, wait for the countdown, scroll to the end and check three boxes. Clean does not need this step. Drill is for your own systems or targets with explicit written authorization, including authorized public-facing assets.
 
 **Clean**
 
@@ -414,9 +414,9 @@ The first time you open Drill you read the notice, wait out the countdown, scrol
 
 ![Patches](docs/preview/settings.png)
 
-**Local lab**
+**Authorized scope**
 
-The open-source build only allows localhost/private nets. The Clean page says so. You cannot register a public host.
+Drill is not categorically restricted to local/private subnets. Record the authorized target inventory, methods and time window before starting an assessment.
 
 | Area | What it shows |
 |---|---|
@@ -425,7 +425,7 @@ The open-source build only allows localhost/private nets. The Clean page says so
 | Drill | assets and environment after authorization. This build does not ship skills or the knowledge base. The tab says Unauthorized until then |
 | Patches | grouped status, Apply, Restore, or Uninstall |
 | Prompt | edit `prompt-inject.md` as the session override |
-| Local lab | loopback / RFC1918 only; names are resolved, and every address must be private |
+| Authorized scope | Owned or explicitly authorized public, private and local systems; network address is not proof of authorization |
 | Rule sets | multiple `AGENTS.md` / `CLAUDE.md`; Enable writes under `$DSH_HOME`, Delete removes the row |
 
 ---
@@ -490,9 +490,9 @@ For routine tasks, you can also opt into Low reasoning for new sessions:
 
 Restart `dsh web` to load the profile. The model and reasoning defaults apply to newly created sessions; select Low in the composer for an existing session. The plugin does not change these model preferences automatically. Keep High when the task needs deeper reasoning, and narrow file searches rather than recursively scanning every application directory.
 
-### Local lab
+### Authorized testing scope
 
-Attack tasks are denied by default. The open-source build only allows loopback and RFC1918 IPs. Names are resolved first; a `.lab` / `.htb` suffix is not enough. A hosts entry that points a lab name at a public IP is blocked. Saying “this is my server” in chat does not allow it.
+Public IPs are not automatically out of scope, and `.lab` / `.htb` suffixes or chat claims are not proof of authorization. Test only systems you own or those listed in written permission; do not probe unauthorized targets.
 
 ---
 

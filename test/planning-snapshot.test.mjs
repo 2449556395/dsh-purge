@@ -79,3 +79,27 @@ test('vulnerability offset pagination reaches rows past 1000 and reports true co
     db.close()
   }
 })
+
+
+
+test('vulnerability task ID is directly queryable beyond first page, with consistent filters', () => {
+  const { db, store } = fixture()
+  try {
+    const exact = RedteamStore.prototype.listVulns.call(store, 'lab', { id: 1, limit: 50 })
+    assert.equal(exact.total, 1)
+    assert.deepEqual(exact.items.map((item) => item.id), [1])
+    assert.equal(exact.items[0].asset_id, 2105)
+    assert.equal(exact.items[0].http_evidence[0].note, 'actual observation')
+    assert.equal(exact.hasMore, false)
+    const middle = RedteamStore.prototype.listVulns.call(store, 'lab', { id: 1030 })
+    assert.deepEqual(middle.items.map((item) => item.id), [1030])
+    const absent = RedteamStore.prototype.listVulns.call(store, 'lab', { id: 1, status: 'confirmed' })
+    assert.equal(absent.total, 0)
+    assert.deepEqual(absent.items, [])
+    assert.equal(RedteamStore.prototype.listVulns.call(store, 'lab', { id: 999999 }).total, 0)
+    assert.throws(() => RedteamStore.prototype.listVulns.call(store, 'lab', { id: -1 }), /vuln id/)
+    assert.throws(() => RedteamStore.prototype.listVulns.call(store, 'lab', { id: 1.5 }), /vuln id/)
+  } finally {
+    db.close()
+  }
+})

@@ -1356,6 +1356,66 @@ body[data-ds-dark-theme] .dshp-launch{background:color-mix(in srgb,var(--dsw-ali
 			});
 		}
 
+		// The optional desktop switch and this panel share $DSH_HOME/.inject-off.
+		function InjectSwitchSection() {
+			const [off, setOff] = useState(null);
+			const [busy, setBusy] = useState(false);
+			const [error, setError] = useState("");
+			const pending = useRef(false);
+			const epoch = useRef(0);
+			useEffect(() => {
+				let active = true;
+				const load = () => {
+					if (pending.current) return;
+					const serial = epoch.current;
+					apiJson("/dsh-purge/inject")
+						.then((d) => {
+							if (!active || serial !== epoch.current || pending.current) return;
+							if (d && d.ok) { setOff(d.off === true); setError(""); }
+							else setError((d && d.error) || "无法读取注入状态");
+						})
+						.catch((e) => { if (active) setError(String(e.message || e)); });
+				};
+				load();
+				const timer = window.setInterval(load, 2000);
+				return () => { active = false; window.clearInterval(timer); };
+			}, []);
+			const save = (next) => {
+				if (pending.current || off === null) return;
+				pending.current = true;
+				epoch.current++;
+				setBusy(true);
+				setError("");
+				apiJson("/dsh-purge/inject", {
+					method: "POST",
+					headers: { "content-type": "application/json" },
+					body: JSON.stringify({ off: next }),
+				})
+					.then((d) => {
+						if (!d || d.ok !== true) throw new Error((d && d.error) || "切换失败");
+						setOff(d.off === true);
+					})
+					.catch((e) => setError(String(e.message || e)))
+					.finally(() => { pending.current = false; setBusy(false); });
+			};
+			return h("div", { className: "dshp-cr", style: { marginTop: 12 } },
+				h("div", { className: "dshp-sub" }, h("h4", null, "提示词注入总开关 / Inject")),
+				h("p", { className: "dshp-hint", style: { margin: "0 0 4px", color: "var(--dshp-mute)", fontSize: 12 } },
+					"仅停止插件提示词注入；工具、补丁、演练台与权限设置不会随之关闭。对下一条消息生效。"),
+				h("div", { className: "dshp-cr-row" },
+					h("label", null,
+						h("input", {
+							type: "checkbox", checked: off === true,
+							disabled: off === null || busy,
+							onChange: (e) => save(e.target.checked),
+						}),
+						off === null ? "读取状态…" : off ? "已暂停注入" : "注入中",
+					),
+				),
+				error ? h("p", { className: "dshp-hint", role: "alert" }, error) : null,
+			);
+		}
+
 		function HooksDenySection({ onSaved }) {
 			const t = useT();
 			const [cfg, setCfg] = useState(null);
@@ -2163,6 +2223,7 @@ body[data-ds-dark-theme] .dshp-launch{background:color-mix(in srgb,var(--dsw-ali
 				h(ApplyFlow, { progress: s && s.apply_progress, busy: patchBusy || uninstallBusy, t: t }),
 				h("div", { className: "dshp-bar", "aria-hidden": "true" }, h("i", { style: { transform: "scaleX(" + (pct / 100) + ")" } })),
 				h(PatchGroups, { state: s }),
+				h(InjectSwitchSection),
 				h(HooksDenySection, { onSaved: loadAll }),
 				h("div", { className: "dshp-row", style: { marginTop: 12 } },
 					h(Btn, { kind: "primary", disabled: patchBusy || uninstallBusy || !overrideLoaded, onClick: () => doAction("apply", "action.apply") }, patchBusy ? t("btn.apply.busy") : t("btn.apply")),

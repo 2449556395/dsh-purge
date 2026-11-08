@@ -2,6 +2,7 @@
 
 import * as core from "../lib/core.js";
 import * as rules from "../lib/rules.js";
+import * as injectSwitch from "../lib/inject-switch.js";
 
 const args = process.argv.slice(2);
 
@@ -36,7 +37,7 @@ function printStatus(state) {
 }
 
 async function main() {
-  const mode = args.find((a) => ["--apply", "--revert", "--uninstall", "--status", "--edit", "--help"].includes(a));
+  const mode = args.find((a) => ["--apply", "--revert", "--uninstall", "--status", "--edit", "--help", "--inject", "--inject-on", "--inject-off", "--inject-toggle"].includes(a));
 
   if (mode === "--help" || args.includes("-h")) {
     console.log(`dsh-purge 用法:
@@ -45,7 +46,23 @@ async function main() {
   dsh-purge --revert     回滚还原
   dsh-purge --uninstall  卸载插件（已应用则先还原）
   dsh-purge --edit       编辑注入文件 prompt-inject.md
+  dsh-purge --inject     查看提示词注入开关
+  dsh-purge --inject-on  恢复提示词注入
+  dsh-purge --inject-off 仅停止提示词注入
+  dsh-purge --inject-toggle 切换注入开关
   dsh-purge --help       帮助`);
+    return;
+  }
+
+  if (mode && mode.startsWith("--inject")) {
+    const home = core.findDshHome();
+    if (mode === "--inject-on") injectSwitch.setInjectionOff(home, false);
+    else if (mode === "--inject-off") injectSwitch.setInjectionOff(home, true);
+    else if (mode === "--inject-toggle") injectSwitch.toggleInjection(home);
+    const off = injectSwitch.isInjectionOff(home);
+    console.log("提示词注入 / prompt injection: " + (off ? "OFF" : "ON"));
+    console.log("开关文件 / flag: " + injectSwitch.flagPath(home));
+    console.log("仅控制注入文本，工具、宿主补丁和演练台保持原状。");
     return;
   }
 

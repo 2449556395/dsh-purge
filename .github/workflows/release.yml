@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -14,7 +15,8 @@ concurrency:
 
 jobs:
   release:
-    if: github.repository == 'YuJunZhiXue/dsh-purge'
+    # 上游保持 master 自动发布；wxcvm fork 只允许在 master 上手动触发，避免每次合并发布。
+    if: github.repository == 'YuJunZhiXue/dsh-purge' || (github.repository == 'wxcvm/dsh-purge' && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/master')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -39,24 +41,28 @@ jobs:
             echo "already published: $tag"
             exit 0
           fi
-          first="$(head -n 1 release-notes.md | tr -d '\r')"
+          notes="release-notes.md"
+          if [ "$GITHUB_REPOSITORY" = "wxcvm/dsh-purge" ]; then
+            notes="release-notes-wxcvm.md"
+          fi
+          first="$(head -n 1 "$notes" | tr -d '\r')"
           if [ "$first" != "# ${version}" ]; then
-            echo "release-notes.md 第一行必须是 # ${version}，现在是: ${first}"
+            echo "$notes 第一行必须是 # ${version}，现在是: ${first}"
             exit 1
           fi
           zip="dsh-purge-${version}.zip"
           if git rev-parse -q --verify "refs/tags/${tag}^{}" >/dev/null; then
             commit="$(git rev-parse "refs/tags/${tag}^{}")"
             git archive --format=zip --prefix="dsh-purge-${version}/" --output="$zip" "$commit"
-            gh release create "$tag" --title "$tag" --notes-file release-notes.md
+            gh release create "$tag" --title "$tag" --notes-file "$notes"
           else
             git archive --format=zip --prefix="dsh-purge-${version}/" --output="$zip" HEAD
-            args=(release create "$tag" --target "$GITHUB_SHA" --title "$tag" --notes-file release-notes.md)
+            args=(release create "$tag" --target "$GITHUB_SHA" --title "$tag" --notes-file "$notes")
             case "$version" in
-              *beta*|*alpha*|*rc*) args+=(--prerelease) ;;
+              *beta*|*alpha*|*rc*|*wxcvm*) args+=(--prerelease) ;;
             esac
             gh "${args[@]}"
           fi
           test -s "$zip"
           gh release upload "$tag" "$zip" --clobber
-          echo "published https://github.com/YuJunZhiXue/dsh-purge/releases/tag/${tag}"
+          echo "published https://github.com/${GITHUB_REPOSITORY}/releases/tag/${tag}"

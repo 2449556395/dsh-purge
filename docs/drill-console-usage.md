@@ -50,6 +50,22 @@
 
 若任务遇到确切阻塞，不要原地重复。可以在 `redteam_next_action` 传入 `blocked_task_key` 跳过一项，也可以传入 `blocked_task_keys`，其值是一个 **JSON 数组字符串**，例如 `["复核有证据的候选漏洞:vuln #12","核对候选证据缺口:vuln #15"]`。条件改变后移除对应 key，避免永久跳过已经恢复的工作。新旧参数可以同时使用。
 
+### 4.2 结果驱动交接：一轮完成后决定继续、跳过还是暂停
+
+本轮改为可在下一次 `redteam_next_action` 中直接传入 `previous_task`：这是 JSON **字符串**，内容包含上一轮 `focus.task_key`、原样 `focus.before` 以及执行结果 `outcome`。比如：
+
+```json
+{"task_key":"复核有证据的候选漏洞:vuln #12","before":{"engagement_id":"lab","score_points":0,"counted_hits":0,"recorded_hits":0,"assets":2,"confirmed":0,"findings":1,"reviewed_assets":0,"evidence_items":1},"outcome":"done"}
+```
+
+`outcome` 只接受 `done`（执行结束）、`blocked`（明确阻塞）、`inconclusive`（结果尚不确定）。工具会核对 `engagement_id`，重新读取**当前演练的真实库统计**并返回 `handoff`：
+
+- `continue`：有新增分数或记录，重新从当前库选下一张任务卡；新增记录不代表已有得分。
+- `skip`：上一轮明确阻塞，自动排除该动作与目标的组合，不在同一条件下重试。
+- `hold`：结果不确定、统计没有变化或只有记录修正；`focus.status=needs-review`，本轮不派新任务，先解释真实结果。
+
+这个决策**不自动执行任何工具或攻击**；它只让现有指挥智能体减少一次统计对账调用和无效续派。以前的 `blocked_task_key(s)` 和单独的 `redteam_progress_check` 仍能正常使用。
+
 ## 5. 常见问题
 
 | 现象 | 原因 | 处理 |

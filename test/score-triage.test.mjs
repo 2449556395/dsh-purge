@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { isUntestedLiveAsset, reviewScoring, nextTaskCard, taskKey, filterBlockedActions, compareProgress, sessionReadiness, reviewCandidateQueue } from '../lib/redteam/score-triage.js'
+import { isUntestedLiveAsset, reviewScoring, nextTaskCard, taskKey, filterBlockedActions, compareProgress, sessionReadiness, reviewCandidateQueue, decideTaskHandoff } from '../lib/redteam/score-triage.js'
 
 const rules = [
   { code: 'server-host', re: /服务器权限|命令执行成功/i },
@@ -307,3 +307,35 @@ test('多个阻塞任务一次过滤，仅排除完全相同的动作和目标',
   assert.equal(filterBlockedActions(actions, []).length, 4)
 })
 
+
+test('任务交接：真实新增记录或分数才重新选任务，不把新增记录冒充得分', () => {
+  const before = {
+    engagement_id: 'authorized-lab',
+    score_points: 0, counted_hits: 0, recorded_hits: 0,
+    assets: 2, confirmed: 0, findings: 0, reviewed_assets: 1, evidence_items: 0,
+  }
+  const scored = compareProgress(before, { ...before, score_points: 30, counted_hits: 1 })
+  const result1 = decideTaskHandoff(scored, 'done')
+  assert.equal(result1.decision, 'continue')
+  assert.equal(scored.status, 'scored')
+  const evidence = compareProgress(before, { ...before, evidence_items: 1 })
+  const result2 = decideTaskHandoff(evidence, 'done')
+  assert.equal(result2.decision, 'continue')
+  assert.equal(evidence.score_increased, false)
+  assert.equal(evidence.status, 'records-added')
+})
+
+test('任务交接：声称完成却没有统计变化要停下核查，不因工具调用结束就自动续派', () => {
+  const base = { score_points: 10, counted_hits: 1, recorded_hits: 1, assets: 2, confirmed: 0 }
+  assert.equal(decideTaskHandoff(compareProgress(base, { ...base }), 'done').decision, 'hold')
+  assert.equal(decideTaskHandoff(compareProgress(base, { ...base, score_points: 0 }), 'done').decision, 'hold')
+  assert.equal(decideTaskHandoff(compareProgress(base, { ...base, assets: 3 }), 'inconclusive').decision, 'hold')
+})
+
+test('任务交接：明确阻塞只跳过本任务；无合法结论拒绝生成决策', () => {
+  const base = { score_points: 0, counted_hits: 0, recorded_hits: 0, assets: 1, confirmed: 0 }
+  const same = compareProgress(base, { ...base })
+  assert.equal(decideTaskHandoff(same, 'blocked').decision, 'skip')
+  assert.throws(() => decideTaskHandoff(same, 'success'), /outcome must/)
+  assert.throws(() => decideTaskHandoff(null, 'done'), /progress comparison/)
+})

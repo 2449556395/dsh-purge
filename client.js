@@ -7771,24 +7771,31 @@ body[data-ds-dark-theme] .rt-scope-testing,.dshp-dock[data-theme="dusk"] .rt-sco
         }, (e) => { setBusy(false); setErr(String((e && e.message) || e)) })
         /* 并发名额按"当前跑着的子智能体"算；host 侧读 subagents 注册表 */
         api({ op: 'agentsStatus' }).then((r) => {
-          if (r && r.ok !== false) setConcurrency(r)
-        }, () => {})
+          setConcurrency(r || { ok: false, error: '没有收到智能体状态' })
+        }, (e) => setConcurrency({ ok: false, error: String((e && e.message) || e) }))
       }
       React.useEffect(load, [eng, refreshKey])
 
-      const used = concurrency ? concurrency.used : null
-      const max = concurrency ? concurrency.max : 3
+      const used = concurrency && typeof concurrency.used === 'number' ? concurrency.used : null
+      const max = concurrency && concurrency.max ? concurrency.max : 3
+      const verified = concurrency && concurrency.available === true
+      const totalRoots = concurrency && Array.isArray(concurrency.per_root) ? concurrency.per_root.length : 0
+      const occupancy = !verified
+        ? (concurrency && concurrency.used_is_lower_bound && used !== null
+          ? '至少在跑 ' + used + ' / 剩余未知' : '占用未知')
+        : totalRoots === 1
+          ? '在跑 ' + used + ' / 剩余 ' + concurrency.free
+          : '在跑 ' + used + '（跨 ' + totalRoots + ' 个会话，剩余名额按会话计算）'
       return h('div', { className: 'rt-main' },
         h('div', { className: 'rt-toolbar' },
           h('span', { style: { fontWeight: 600 } }, '作战智能体'),
           h('span', { className: 'rt-tag rt-tag-passive' }, '并发上限 ' + max),
-          used === null
-            ? h('span', { className: 'rt-tag' }, '占用未知')
-            : h('span', { className: 'rt-tag' + (used >= max ? ' rt-tag-warn' : ' rt-tag-live') }, '在跑 ' + used + ' / 剩余 ' + Math.max(max - used, 0)),
+          h('span', { className: 'rt-tag' + (verified && totalRoots === 1 ? ' rt-tag-live' : ' rt-tag-warn') }, occupancy),
           h('div', { className: 'rt-spacer' }),
           h('button', { className: 'rt-btn', disabled: busy, onClick: load }, busy ? '读取中…' : '刷新')),
         h('div', { className: 'rt-pane' },
           err ? h('div', { className: 'rt-err' }, err) : null,
+          concurrency && concurrency.ok === false ? h('div', { className: 'rt-err' }, concurrency.error || '智能体状态读取失败') : null,
           h('div', { className: 'rt-card' },
             h('h4', null, '并发规则（硬约束）'),
             h('div', { style: { fontSize: 12, lineHeight: 1.7 } },
@@ -7823,6 +7830,7 @@ body[data-ds-dark-theme] .rt-scope-testing,.dshp-dock[data-theme="dusk"] .rt-sco
 
       const limit = info.limit || 10
       const used = typeof info.used === 'number' ? info.used : null
+      const remaining = info.available === true && typeof info.free === 'number' ? info.free : null
       const source = info.source === 'settings' ? '面板中设置'
         : info.source === 'env' ? '环境变量 REDTEAM_MAX_AGENTS' : '默认值'
       const n = Number(draft)
@@ -7841,7 +7849,9 @@ body[data-ds-dark-theme] .rt-scope-testing,.dshp-dock[data-theme="dusk"] .rt-sco
         h('h4', null, '并发数量'),
         h('div', { style: { fontSize: 12, lineHeight: 1.8, marginBottom: 8 } },
           '同一靶标**同时最多几个执行智能体**。当前生效：**' + (info.max || '?') + '**'
-          + (used === null ? '' : '（在跑 ' + used + '，剩余 ' + Math.max((info.max || 0) - used, 0) + '）')
+          + (used === null ? '（运行状态未知）' : remaining === null
+            ? '（已确认在跑 ' + used + '，剩余名额未知或按会话计算）'
+            : '（在跑 ' + used + '，剩余 ' + remaining + '）')
           + '，来源：' + source + '。改完**立即生效**，不用重启。'),
         h('div', { style: { display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' } },
           h('input', {

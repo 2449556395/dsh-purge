@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { isUntestedLiveAsset, reviewScoring, nextTaskCard, taskKey, filterBlockedActions, compareProgress, sessionReadiness } from '../lib/redteam/score-triage.js'
+import { isUntestedLiveAsset, reviewScoring, nextTaskCard, taskKey, filterBlockedActions, compareProgress, sessionReadiness, reviewCandidateQueue } from '../lib/redteam/score-triage.js'
 
 const rules = [
   { code: 'server-host', re: /服务器权限|命令执行成功/i },
@@ -252,5 +252,58 @@ test('离线入口、自建隧道、未知或关闭通道不得当成有效访�
   assert.equal(valid.shell_status_review, false)
   assert.equal(valid.tunnel_status_review, false)
   assert.equal(sessionReadiness().active_target_tunnels, 0)
+})
+
+test('候选按关联的存活资产及实际证据分队列，严重程度只决定复核顺序', () => {
+  const assets = [
+    { id: 1, state: 'live', test_status: 'untested', ip: '192.0.2.10' },
+    { id: 2, state: 'live', test_status: 'tested', ip: '192.0.2.20' },
+  ]
+  const candidates = [
+    { id: 5, status: 'candidate', asset_id: 1, severity: 'low', title: '低风险候选', evidence: '观察到响应差异' },
+    { id: 7, status: 'candidate', asset_id: 2, severity: 'high', title: '高风险候选', http_evidence: [{ note: '已记录测试' }] },
+    { id: 8, status: 'candidate', asset_id: 1, severity: 'critical', title: '无证据候选' },
+    { id: 9, status: 'confirmed', asset_id: 1, severity: 'critical', evidence: '已确认' },
+  ]
+  const q = reviewCandidateQueue(candidates, assets)
+  assert.equal(q.total, 3)
+  assert.deepEqual(q.ready.map((v) => v.vuln_id), [7, 5])
+  assert.deepEqual(q.needs_evidence.map((v) => v.vuln_id), [8])
+  assert.equal(q.needs_scope.length, 0)
+  assert.equal(q.deferred.length, 0)
+  assert.equal(q.ready[0].asset_ip, '192.0.2.20')
+})
+
+test('无资产关联/记录不在样本中只提示核对范围，失活与阻塞资产暂缓复核', () => {
+  const assets = [
+    { id: 1, state: 'dead', ip: '192.0.2.1' },
+    { id: 2, state: 'live', test_status: 'blocked', ip: '192.0.2.2' },
+    { id: 3, state: 'live', test_status: 'abandoned', ip: '192.0.2.3' },
+    { id: 4, state: 'live', test_status: 'no_surface', ip: '192.0.2.4' },
+    { id: 6, state: 'live', test_status: 'testing', ip: '192.0.2.6' },
+  ]
+  const candidates = [1, 2, 3, 4, 5, null, 6].map((asset_id, index) => ({
+    id: index + 1, status: 'candidate', severity: 'high', asset_id, evidence: '旧观察结果',
+  }))
+  const q = reviewCandidateQueue(candidates, assets)
+  assert.deepEqual(q.deferred.map((v) => v.vuln_id), [1, 2, 3, 4, 7])
+  assert.deepEqual(q.needs_scope.map((v) => v.vuln_id), [5, 6])
+  assert.equal(q.ready.length, 0)
+  assert.equal(q.needs_evidence.length, 0)
+})
+
+test('多个阻塞任务一次过滤，仅排除完全相同的动作和目标', () => {
+  const actions = [
+    { priority: 2, action: '复核漏洞', target: 'vuln #1' },
+    { priority: 2, action: '复核漏洞', target: 'vuln #2' },
+    { priority: 3, action: '核对证据', target: 'vuln #1' },
+    { priority: 3, action: '复核漏洞', target: 'vuln #3' },
+  ]
+  const blocked = actions.slice(0, 2).map(taskKey)
+  const left = filterBlockedActions(actions, blocked)
+  assert.deepEqual(left.map((x) => x.target), ['vuln #1', 'vuln #3'])
+  assert.equal(left[0].action, '核对证据')
+  assert.equal(filterBlockedActions(actions, taskKey(actions[0])).length, 3)
+  assert.equal(filterBlockedActions(actions, []).length, 4)
 })
 

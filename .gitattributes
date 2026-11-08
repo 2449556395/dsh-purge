@@ -1,0 +1,3 @@
+# Generated client bundle and its source must keep identical bytes on Windows.
+/client.js -text
+/lib/redteam/client.js -text

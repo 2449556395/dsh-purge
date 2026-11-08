@@ -8030,6 +8030,7 @@ body[data-ds-dark-theme] .rt-scope-testing,.dshp-dock[data-theme="dusk"] .rt-sco
       const [newName, setNewName] = React.useState('')
       const [geom, setGeom] = React.useState(loadRtGeom)
       const [creating, setCreating] = React.useState(false)
+      const [deleting, setDeleting] = React.useState(false)
       const [refreshKey, setRefreshKey] = React.useState(0)
       const [digest, setDigest] = React.useState(null)
       const [seen, setSeen] = React.useState(null)
@@ -8092,6 +8093,33 @@ body[data-ds-dark-theme] .rt-scope-testing,.dshp-dock[data-theme="dusk"] .rt-sco
           setNewName('')
           refreshList(r.engagement && r.engagement.id)
         }, (e) => { setCreating(false); setErr(String((e && e.message) || e)) })
+      }
+
+      const deleteCurrentEngagement = () => {
+        const target = engagements.find((item) => item.id === eng)
+        if (!target || deleting) return
+        const label = target.name || target.id
+        if (!window.confirm('永久删除靶标「' + label + '」及其本地资产库、证据和报告？\n此操作不可撤销。')) return
+        setDeleting(true)
+        api({ op: 'deleteEngagement', id: target.id, confirm: target.id }).then((r) => {
+          setDeleting(false)
+          if (!r || r.ok === false) { setErr((r && r.error) || '删除靶标失败'); return }
+          /* 清除迟到的旧快照，再根据后端真实名册选择下一个靶标。 */
+          ++snapshotRequest.current
+          selectedEngagement.current = null
+          setSnapshot(null)
+          setErr(null)
+          setRefreshKey((k) => k + 1)
+          api({ op: 'bootstrap' }).then((b) => {
+            if (!b || b.ok === false) { setEng(null); setErr((b && b.error) || '删除成功，但刷新名册失败'); return }
+            const items = b.engagements || []
+            setEngagements(items)
+            const next = items.some((item) => item.id === r.current)
+              ? r.current : (items[0] && items[0].id) || null
+            setEng(next)
+            loadSnapshot(next)
+          }, (e) => { setEng(null); setErr('删除成功，但刷新名册失败：' + String((e && e.message) || e)) })
+        }, (e) => { setDeleting(false); setErr(String((e && e.message) || e)) })
       }
 
       /** 刷新：重新拉取名册/快照，并让当前页签重新取数。 */
@@ -8302,6 +8330,9 @@ body[data-ds-dark-theme] .rt-scope-testing,.dshp-dock[data-theme="dusk"] .rt-sco
             h('option', { value: '', disabled: true }, engagements.length ? '选择靶标' : '暂无靶标'),
             engagements.map((x) => h('option', { key: x.id, value: x.id }, x.name || x.id || '未命名')),
           ),
+          h('button', { className: 'rt-btn', disabled: !eng || deleting || creating,
+            title: '永久删除当前靶标及其本地文件；也可清理没有数据库的孤儿靶标目录',
+            onClick: deleteCurrentEngagement }, deleting ? '删除中…' : '删除靶标'),
           h('div', { className: 'rt-spacer' }),
           embedded ? null : h(VersionBar, null),
           full ? h('button', { className: 'rt-btn', title: '回到带侧栏的普通界面（或按 Esc）', onClick: exitFull }, '退出全面浏览') : null,

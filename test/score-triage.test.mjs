@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { isUntestedLiveAsset, reviewScoring, nextTaskCard, compareProgress } from '../lib/redteam/score-triage.js'
+import { isUntestedLiveAsset, reviewScoring, nextTaskCard, taskKey, filterBlockedActions, compareProgress } from '../lib/redteam/score-triage.js'
 
 const rules = [
   { code: 'server-host', re: /服务器权限|命令执行成功/i },
@@ -177,4 +177,40 @@ test('多个匹配规则中只要有一条可用，仍可进入人工复核', ()
   assert.equal(r.review_ready, 1)
   assert.equal(r.unavailable_rule, 0)
   assert.equal(r.suggestions[0].suggest.filter((s) => s.available).length, 1)
+})
+
+test('确认阻塞的任务可跳过，其他目标不受影响', () => {
+  const actions = [
+    { priority: 1, action: '核对证据', target: 'vuln #1' },
+    { priority: 2, action: '核对证据', target: 'vuln #2' },
+  ]
+  const blocked = taskKey(actions[0])
+  const remaining = filterBlockedActions(actions, blocked)
+  assert.equal(remaining.length, 1)
+  assert.equal(nextTaskCard(remaining).target, 'vuln #2')
+  assert.equal(filterBlockedActions(actions).length, 2)
+  assert.equal(filterBlockedActions([actions[0]], blocked).length, 0)
+  assert.equal(nextTaskCard(filterBlockedActions([actions[0]], blocked)).status, 'idle')
+})
+test('计分索引只关联匹配的有效漏洞 ID，不误把非法 ID 归为已有计分', () => {
+  const board = { items: [{ code: 'server-host', points: 50, enabled: true, hits: [
+    { id: 1, vuln_id: 1, capped: false, self_created: false },
+    { id: 2, vuln_id: 'nonsense', capped: false, self_created: false },
+    { id: 3, vuln_id: null, capped: false, self_created: false },
+  ] }] }
+  const result = reviewScoring([vuln(1), vuln(2), vuln('nonsense')], board, rules)
+  assert.equal(result.counted, 1)
+  assert.equal(result.suggestions[0].linked_hits, 1)
+  assert.equal(result.suggestions[1].status, 'review-ready')
+  assert.equal(result.suggestions[2].status, 'review-ready')
+})
+test('批量漏洞与命中仍按对应的 vuln_id 一一对账', () => {
+  const vulns = Array.from({ length: 400 }, (_, i) => vuln(i + 1))
+  const hits = vulns.map((item) => ({
+    id: item.id, vuln_id: item.id, capped: false, self_created: false,
+  }))
+  const result = reviewScoring(vulns, points(hits), rules)
+  assert.equal(result.counted, 400)
+  assert.equal(result.suggestions.length, 400)
+  assert.equal(result.followup.length, 0)
 })

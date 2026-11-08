@@ -71,3 +71,16 @@ test('范围复核结果优先呈现未匹配与仅域名匹配资产', () => {
   assert.deepEqual(result.items.map((x) => x.status), ['unmatched', 'name-only', 'ip-matched'])
   assert.equal(result.sample_truncated, true)
 })
+
+test('旧口径命中不能误报为有效交付，禁用规则也应跳过', () => {
+  const result = reviewDelivery({ items: [
+    { code: 'legacy', enabled: true, legacy: true, hits: [{ id: 1 }] },
+    { code: 'disabled', enabled: false, hits: [{ id: 2 }] },
+    { code: 'valid', enabled: true, hits: [
+      { id: 3, target: '192.0.2.10', evidence: '已记录核对结果', vuln_id: 5 },
+    ] },
+  ] })
+  assert.equal(result.counted, 1)
+  assert.equal(result.gaps, 0)
+  assert.equal(result.reviewable, true)
+})

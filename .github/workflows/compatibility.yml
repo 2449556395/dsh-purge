@@ -3,7 +3,7 @@ name: Maintenance compatibility
 on:
   workflow_dispatch:
   push:
-    branches: [codex/compat-maintenance, codex/redteam-workflow-enhancement]
+    branches: [master, codex/compat-maintenance, codex/redteam-workflow-enhancement]
   pull_request:
 
 permissions:

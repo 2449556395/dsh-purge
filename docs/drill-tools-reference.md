@@ -132,6 +132,11 @@ _每条资产必须带 provenance（passive/active）与 tool；assess 阶段用
 - `engagement`
 - `id` — 资产 id（来自 redteam_asset_query 结果）
 
+### `redteam_data_quality`
+只读核对资产库记录的完整性：区分候选漏洞缺证据与已确认/利用记录缺证据，统计 HTTP 请求/响应为空，以及漏洞、HTTP 证据、截图中的资产/漏洞孤立引用。只返回汇总数量，不返回原始证据或凭据，不迁移数据库，也不把记录完整当成漏洞已验证。
+
+参数：`engagement`（可选；省略时继承当前或父会话靶标）。输出 `quality.status`、`quality.totals`、`quality.counts`、`quality.issues`。
+
 ### `redteam_asset_stats`
 资产测绘概览：C 段数、资产数（存活）、开放端口、服务、指纹、被动/主动溯源条数，以及各 C 段的明细。
 

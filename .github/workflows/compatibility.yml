@@ -47,3 +47,4 @@ jobs:
         run: |
           export DSH_COMPAT_HOST_ROOT="$GITHUB_WORKSPACE/.scratch/hosts/${{ matrix.host }}"
           node --test test/*.test.* maintenance/*.test.mjs maintenance/desktop-tools/*.test.mjs
+          node --test --test-name-pattern="data quality" test-pending/store-query.mjs

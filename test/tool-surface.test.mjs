@@ -32,7 +32,7 @@ test('reviewed tool names match source declarations and actual registrations', a
   const { apply } = await import('../lib/redteam/tools.js')
   const registered = new Map()
   const ctx = {
-    redteam: { root: home, listEngagements: () => [] },
+    redteam: { root: home, listEngagements: () => [], dataQuality: id => ({ missing_evidence: 2, target: id }) },
     tools: { register(tool) {
       assert.ok(!registered.has(tool.name), `duplicate tool registration: ${tool.name}`)
       registered.set(tool.name, tool)
@@ -42,4 +42,11 @@ test('reviewed tool names match source declarations and actual registrations', a
   }
   apply(ctx)
   assert.deepEqual([...registered.keys()].sort(), expected)
+  const quality = registered.get('redteam_data_quality')
+  const read = JSON.parse(await quality.execute({ engagement: 'fixture' }, {}))
+  assert.deepEqual(read, {
+    ok: true, engagement: 'fixture', quality: { missing_evidence: 2, target: 'fixture' },
+  })
+  const noTarget = JSON.parse(await quality.execute({}, {}))
+  assert.equal(noTarget.ok, false)
 })

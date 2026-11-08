@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { isUntestedLiveAsset, reviewScoring, nextTaskCard, taskKey, filterBlockedActions, compareProgress } from '../lib/redteam/score-triage.js'
+import { isUntestedLiveAsset, reviewScoring, nextTaskCard, taskKey, filterBlockedActions, compareProgress, sessionReadiness } from '../lib/redteam/score-triage.js'
 
 const rules = [
   { code: 'server-host', re: /服务器权限|命令执行成功/i },
@@ -214,3 +214,43 @@ test('批量漏洞与命中仍按对应的 vuln_id 一一对账', () => {
   assert.equal(result.suggestions.length, 400)
   assert.equal(result.followup.length, 0)
 })
+
+test('任务进度基线绑定具体演练，拒绝跨靶标混算', () => {
+  const state = {
+    engagement_id: 'target-a',
+    score_points: 5, score_hits: 1, recorded_hits: 1, assets: 2, confirmed: 1,
+  }
+  const card = nextTaskCard([{ priority: 1, action: '复核证据', target: 'vuln #1' }], state)
+  assert.equal(card.before.engagement_id, 'target-a')
+  const other = { ...card.before, engagement_id: 'target-b', score_points: 100 }
+  assert.throws(() => compareProgress(card.before, other), /engagement_id mismatch/)
+  assert.throws(() => compareProgress(card.before, { ...card.before, engagement_id: undefined }), /engagement_id mismatch/)
+  const same = compareProgress(card.before, { ...card.before, score_points: 15 })
+  assert.equal(same.status, 'scored')
+  assert.equal(same.delta.score_points, 10)
+})
+
+test('离线入口、自建隧道、未知或关闭通道不得当成有效访问路径', () => {
+  const s = sessionReadiness(
+    [{ id: 1, status: 'offline' }, { id: 2, status: 'dead' }],
+    [
+      { id: 10, status: 'active', legit: false },
+      { id: 11, status: 'down', legit: true },
+      { id: 12, status: 'active', legit: null },
+    ],
+  )
+  assert.equal(s.online_shells, 0)
+  assert.equal(s.active_target_tunnels, 0)
+  assert.equal(s.shell_status_review, true)
+  assert.equal(s.tunnel_status_review, true)
+  const valid = sessionReadiness(
+    [{ status: 'online' }],
+    [{ status: 'active', legit: true }, { status: 'unknown', legit: true }],
+  )
+  assert.equal(valid.online_shells, 1)
+  assert.equal(valid.active_target_tunnels, 1)
+  assert.equal(valid.shell_status_review, false)
+  assert.equal(valid.tunnel_status_review, false)
+  assert.equal(sessionReadiness().active_target_tunnels, 0)
+})
+

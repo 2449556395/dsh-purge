@@ -438,6 +438,12 @@ Runtime files live under `$DSH_HOME`: `prompt-inject.md`, `rules/`, `redteam/`. 
 
 ---
 
+## Read-only runtime and Skill diagnostics
+
+Run `dsh-purge --runtime-status` in the environment that starts your DSH host (or `node bin/dsh-purge.js --runtime-status` from this repository). It checks native `node:sqlite` support, packaged Skill frontmatter, installed copies, and preset roots without modifying anything. The package currently declares Node >=18, but the SQLite-backed asset store needs a runtime with `node:sqlite` (unflagged since Node 22.13.0). This is a diagnostic, not a new installation gate.
+
+**Disk files are not proof of native Skill registration.** Open the running DSH Skill panel and check the native registry state / “host listed” indicator for the selected redteam scope.
+
 ## Usage
 
 ```sh

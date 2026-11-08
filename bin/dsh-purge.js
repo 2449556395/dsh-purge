@@ -38,11 +38,12 @@ function printStatus(state) {
 }
 
 async function main() {
-  const mode = args.find((a) => ["--apply", "--revert", "--uninstall", "--status", "--edit", "--help", "--inject", "--inject-on", "--inject-off", "--inject-toggle", "--web-port-status"].includes(a));
+  const mode = args.find((a) => ["--apply", "--revert", "--uninstall", "--status", "--runtime-status", "--edit", "--help", "--inject", "--inject-on", "--inject-off", "--inject-toggle", "--web-port-status"].includes(a));
 
   if (mode === "--help" || args.includes("-h")) {
     console.log(`dsh-purge 用法:
   dsh-purge --status     显示状态
+  dsh-purge --runtime-status 只读检查 Node/SQLite 与 Skill 文件、预设配置
   dsh-purge --apply      应用全部清洗（提示词+代码+shim+override）
   dsh-purge --revert     回滚还原
   dsh-purge --uninstall  卸载插件（已应用则先还原）
@@ -54,6 +55,12 @@ async function main() {
   dsh-purge --web-port-status [port] 只读诊断 Web 端口与进程归属
   dsh-purge --help       帮助`);
     return;
+  }
+
+  if (mode === '--runtime-status') {
+    const { inspectRuntime } = await import('../lib/redteam/runtime-diagnostics.js')
+    console.log(JSON.stringify(await inspectRuntime(), null, 2))
+    return
   }
 
   if (mode === "--web-port-status") {

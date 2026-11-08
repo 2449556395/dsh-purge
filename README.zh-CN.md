@@ -165,6 +165,14 @@ Harness 不只是把问题交给模型。它还会在运行时改提示词、审
 
 ---
 
+## 运行环境与 Skill 加载诊断（只读）
+
+安装后可在**当前运行的 DSH 对应环境**执行 `dsh-purge --runtime-status`（也可从本仓库运行 `node bin/dsh-purge.js --runtime-status`）。它会检查当前 Node.js 的 `node:sqlite` 可用性、随包 Skill 的 YAML 元数据、同步到 `$DSH_HOME/redteam/skills` 的文件，以及用户预设中的技能目录引用；不会自动修复、安装或修改数据库。
+
+注意：`package.json` 的 `node >=18` 是现有安装声明，**不意味着 SQLite 资产库在 Node 18 下可用**；`node:sqlite` 从 Node 22.13.0 起默认开放（早期 Node 22 需额外启动参数）。诊断会直接探测实际可用性，不擅自改变最低版本要求。
+
+**文件就绪不等于宿主已注册 Skill。** 在正在运行的 DSH 作战台打开「技能库」，核对 `registryState` / 「宿主已列出」；若只有「正文可读」，尚不能证明模型可以调用。此处的命令不会启动或连接 DSH 宿主。
+
 ## 安装
 
 按下面三步走。**不要走插件市场**：[dsh-plugin.org](https://dsh-plugin.org) 或设置里的「插件市场」一键安装会报 `already queued: dsh-purge`，命令也走不成。npm 仓库没有 `dsh-purge` 这个名字，不要 `pnpm add dsh-purge`；本机只有 pnpm 时走第 2 步里的 pnpm 地址。

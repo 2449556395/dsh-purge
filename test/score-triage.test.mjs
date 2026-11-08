@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { isUntestedLiveAsset, reviewScoring, nextTaskCard, taskKey, filterBlockedActions, compareProgress, sessionReadiness, reviewCandidateQueue, candidateQueuePage, decideTaskHandoff, planUntestedAssetTasks } from '../lib/redteam/score-triage.js'
+import { isUntestedLiveAsset, reviewScoring, nextTaskCard, taskKey, filterBlockedActions, compareProgress, sessionReadiness, reviewCandidateQueue, candidateQueuePage, decideTaskHandoff, planUntestedAssetTasks, unblockedTaskWindow } from '../lib/redteam/score-triage.js'
 
 const rules = [
   { code: 'server-host', re: /服务器权限|命令执行成功/i },
@@ -392,5 +392,46 @@ test('candidate queue pages retain full counts and never promote missing evidenc
   assert.throws(() => candidateQueuePage(queue, 'other'), /candidate category/)
   assert.throws(() => candidateQueuePage(queue, 'ready', { limit: 0 }), /limit/)
   assert.throws(() => candidateQueuePage(queue, 'ready', { offset: -1 }), /offset/)
+})
+
+test('已跳过前 40 台后，窗口必须继续选择资产 #41 而非误判队列为空', () => {
+  const assets = Array.from({ length: 115 }, (_, index) => ({
+    id: index + 1, ip: '192.0.2.' + (index + 1), state: 'live', test_status: 'untested',
+  }))
+  const blocked = assets.slice(0, 40).map((asset) => '漏洞发现:asset #' + asset.id)
+  const picked = unblockedTaskWindow(assets, '漏洞发现', 'asset', blocked)
+  assert.deepEqual(picked.items.map((asset) => asset.id), Array.from({ length: 30 }, (_, i) => i + 41))
+  assert.deepEqual(picked.skipped, blocked)
+  const tasks = planUntestedAssetTasks(picked.items)
+  assert.equal(tasks.length, 30)
+  assert.equal(nextTaskCard(filterBlockedActions(tasks, blocked)).target, 'asset #41')
+  // 100 个已知阻塞项仍可从 101 继续，单次候选保持最多 30 条。
+  const hundred = assets.slice(0, 100).map((asset) => '漏洞发现:asset #' + asset.id)
+  const remaining = unblockedTaskWindow(assets, '漏洞发现', 'asset', hundred)
+  assert.equal(remaining.items[0].id, 101)
+  assert.equal(remaining.items.length, 15)
+  assert.equal(remaining.skipped.length, 100)
+  const exhausted = unblockedTaskWindow(assets, '漏洞发现', 'asset',
+    assets.map((asset) => '漏洞发现:asset #' + asset.id))
+  assert.equal(exhausted.items.length, 0)
+  assert.equal(exhausted.skipped.length, 115)
+})
+
+test('候选漏洞的三类任务分别排除已阻塞项后再取窗口，不误跳过其它动作', () => {
+  const rows = Array.from({ length: 70 }, (_, i) => ({ vuln_id: i + 1, severity: 'high' }))
+  const blocked = rows.slice(0, 35).map((row) => '复核有证据的候选漏洞:vuln #' + row.vuln_id)
+  const first = unblockedTaskWindow(rows, '复核有证据的候选漏洞', 'vuln', blocked)
+  assert.equal(first.items[0].vuln_id, 36)
+  assert.equal(first.items.at(-1).vuln_id, 65)
+  assert.equal(first.items.length, 30)
+  assert.deepEqual(first.skipped, blocked)
+  const evidence = unblockedTaskWindow(rows, '核对候选证据缺口', 'vuln', blocked)
+  assert.equal(evidence.items[0].vuln_id, 1)
+  assert.equal(evidence.skipped.length, 0)
+  const scope = unblockedTaskWindow(rows, '核对候选与资产及授权范围的关联', 'vuln',
+    rows.slice(0, 30).map((v) => '核对候选与资产及授权范围的关联:vuln #' + v.vuln_id))
+  assert.equal(scope.items[0].vuln_id, 31)
+  const stale = unblockedTaskWindow([], '漏洞发现', 'asset', blocked)
+  assert.deepEqual(stale, { items: [], skipped: [] })
 })
 

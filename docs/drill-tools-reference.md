@@ -1,6 +1,6 @@
 # 作战台工具逐个注释（redteam_* 全量）
 
-> 由 `lib/redteam/tools.js` 的 `name/description/parameters` 自动抽取生成，改完代码重跑脚本即可同步。
+> 本文档目前人工维护。新增或删除工具时需同步修改，`test/tool-surface.test.mjs` 会检查工具名称与文档覆盖；不存在自动生成脚本。
 
 具体工具数量及定义以 `lib/redteam/tools.js` 为准。分组只是使用习惯，不是权限边界。
 
@@ -751,6 +751,40 @@ _交付用 score_report（只收已得分项，附可重放原始请求）；rep
 参数：
 - `engagement`
 - `id` — shot id（redteam_shot_list 里返回的 id）
+
+## 注册工具补充说明
+
+以下工具已在 `lib/redteam/tools.js` 注册，此处补全此前遗漏的说明。
+
+### `redteam_ingest`
+批量解析本地扫描文件，支持 nuclei、httpx、nmap、ffuf。默认只预览计数；只有 `commit: true` 才写入资产或漏洞。ffuf 仅返回路径，不会写库。
+
+参数：`engagement`（可选）、`file`（必填）、`kind`（可选）、`commit`（默认 false）、`max`（默认 5000，上限 20000）。
+
+### `redteam_credential_check`
+对已记录或明确输入的凭据进行 TCP 连通性检查；mysql/redis 支持一次协议认证并返回错误诊断。会访问指定主机，须在允许的测试范围内使用。
+
+参数：`engagement`、`credential_id`；或 `host`、`port`、`username`、`password`、`database`、`kind`（mysql/redis/ssh/tcp）、`timeout`。
+
+### `redteam_score_suggest`
+只读对账已确认漏洞、证据、实际成果与计分规则；`can_score` 是待复核建议，不会自动生成 `score_hit`。
+
+参数：`engagement`、`limit`（默认 8，最多 20）。
+
+### `redteam_scope_review`
+离线只读地把库内资产与用户明确列出的允许范围进行匹配，支持 IPv4/IPv6、CIDR、域名与通配子域名。匹配结果不是授权证明；超过查询上限时会报告部分覆盖。
+
+参数：`engagement`、`allowed`（必填，逗号或换行分隔）、`limit`（默认 25，最多 100）。
+
+### `redteam_delivery_audit`
+只读检查已记录得分的目标、证据结果与来源关联缺口；文本完整不代表漏洞已可复现，也不会自动加分。
+
+参数：`engagement`、`limit`（默认 25，最多 100）。
+
+### `redteam_progress_check`
+只读比较前后分数、资产、漏洞、测试状态及 HTTP 证据数量，不会把变化推断成真实突破。
+
+参数：`engagement`、`before`（必填，原样传入上次 `redteam_next_action` 的 `focus.before` JSON 字符串）、`task_key`（可选）。
 
 ## 典型调用链
 

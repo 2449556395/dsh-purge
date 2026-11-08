@@ -1,0 +1,38 @@
+name: Pending specifications (non-blocking)
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  pending:
+    name: Pending specs (failures explicitly reported)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install runtime dependencies without lifecycle scripts
+        run: npm install --ignore-scripts --legacy-peer-deps --no-audit --no-fund --omit=optional
+      - name: Run pending specifications
+        id: specs
+        continue-on-error: true
+        run: node --test test-pending/*.mjs
+      - name: Report pending status prominently
+        if: always()
+        shell: bash
+        env:
+          PENDING_OUTCOME: ${{ steps.specs.outcome }}
+        run: |
+          echo '## Pending specifications (not release-gating)' >> "$GITHUB_STEP_SUMMARY"
+          if [ "$PENDING_OUTCOME" = 'failure' ]; then
+            echo '⚠️ Pending specifications currently fail. Inspect the preceding test step before claiming full coverage.' >> "$GITHUB_STEP_SUMMARY"
+            echo '::warning title=Pending specs failing::Known pending tests are visible and not part of the green release gate.'
+          else
+            echo "Result: $PENDING_OUTCOME" >> "$GITHUB_STEP_SUMMARY"
+          fi

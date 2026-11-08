@@ -31,3 +31,17 @@ Windows PowerShell 在仓库根目录执行：
 - 自动终止端口进程的启动钩子：可能误关仍在使用的 DSH 实例，改为只读诊断。
 - lib/subagent-control.js：会将宿主子代理审批策略 never 改成 ask，并对审批请求直接返回 allowed-once；不合并这种审批绕过。
 - 备份内 node_modules/.bin、旧安装登记的绝对路径及失效仓库地址：与当前安装方式不兼容，不覆盖。
+
+## 第三轮：吸收配置原子写入
+
+备份里的 lib/redteam/atomic-write.js 提供先写临时文件、同步后再改名的保存方式；当前主线遗漏了这项，部分配置仍直接覆盖 JSON。
+
+本轮新增同名模块，并将三个实际仍在直接写盘的入口统一接入：
+
+- 智能体并发上限：lib/redteam/settings.js
+- 工具箱路径、FOFA/VPS 等平台设置：lib/redteam/platform-config.js
+- 代理连接与凭据配置：lib/redteam/proxy-config.js
+
+临时文件采用 0600 权限（在支持 POSIX 权限的平台上），写入失败保留原文件并抛出错误；不自动重试、不重置配置。现有已经独立实现原子保存的 proxy-pool.js 维持原样，避免重造功能。
+
+此修改只解决写入中断导致的半截 JSON，不解决多个独立进程同时编辑时的最终覆盖冲突。

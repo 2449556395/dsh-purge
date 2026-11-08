@@ -3,6 +3,7 @@
 import * as core from "../lib/core.js";
 import * as rules from "../lib/rules.js";
 import * as injectSwitch from "../lib/inject-switch.js";
+import { inspectWebPort, dshHomeDir } from "../lib/web-port-diagnostics.js";
 
 const args = process.argv.slice(2);
 
@@ -37,7 +38,7 @@ function printStatus(state) {
 }
 
 async function main() {
-  const mode = args.find((a) => ["--apply", "--revert", "--uninstall", "--status", "--edit", "--help", "--inject", "--inject-on", "--inject-off", "--inject-toggle"].includes(a));
+  const mode = args.find((a) => ["--apply", "--revert", "--uninstall", "--status", "--edit", "--help", "--inject", "--inject-on", "--inject-off", "--inject-toggle", "--web-port-status"].includes(a));
 
   if (mode === "--help" || args.includes("-h")) {
     console.log(`dsh-purge 用法:
@@ -50,7 +51,25 @@ async function main() {
   dsh-purge --inject-on  恢复提示词注入
   dsh-purge --inject-off 仅停止提示词注入
   dsh-purge --inject-toggle 切换注入开关
+  dsh-purge --web-port-status [port] 只读诊断 Web 端口与进程归属
   dsh-purge --help       帮助`);
+    return;
+  }
+
+  if (mode === "--web-port-status") {
+    const index = args.indexOf(mode);
+    const rawPort = args[index + 1] || process.env.PORT || "3080";
+    const status = inspectWebPort(rawPort, dshHomeDir());
+    console.log("Web port: " + status.port + (status.occupied ? " (occupied)" : " (no listener found)"));
+    if (status.recorded_pid) {
+      console.log("Previous plugin-spawned PID: " + status.recorded_pid
+        + (status.recorded_on_port ? " (still associated with this port)" : " (not listening on this port)"));
+    }
+    for (const item of status.listeners) {
+      console.log("  PID " + item.pid + " — " + item.kind);
+    }
+    console.log(status.note);
+    console.log("This command never stops processes or changes the listening port.");
     return;
   }
 

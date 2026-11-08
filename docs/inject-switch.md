@@ -30,7 +30,7 @@ HTTP 仅允许本地环回连接并复用已有的同源检查：
 - `POST /dsh-purge/inject` 使用 JSON `{"off":true}` 或 `{"off":false}`。
 - 不支持 GET 修改状态、URL 参数切换，写盘失败返回错误。
 
-备份内提供的独立桌面小程序使用同一标记文件，仍可作为**可选的本地文件开关**；但它附带的旧版 HTTP 端点不再提供。为安全和可追溯性起见，未把备份里的可执行文件直接纳入仓库或发布包。
+**Windows 独立桌面开关现在可以从源码重新编译**：运行 `maintenance/inject-switch/Build.ps1`，输出至 `maintenance/inject-switch/dist/dsh-inject-switch.exe`。CI 的 Windows 检查还会提供临时下载的 `dsh-inject-switch-windows` artifact。新版桌面开关直接操作相同的标记文件，不再使用旧 HTTP 端点；备份中的原始 EXE 未被并入仓库。详情见 [备份第二轮吸收说明](backup-1.1.92-adoption.md)。
 
 ## 测试
 

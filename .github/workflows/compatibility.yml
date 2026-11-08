@@ -30,6 +30,18 @@ jobs:
         run: |
           node scripts/build-client.mjs --check
           node scripts/check-syntax.mjs
+      # Build the optional GUI only once in the existing Windows matrix, not five times.
+      - name: Compile optional Windows injection switch from source
+        if: runner.os == 'Windows' && matrix.host == '0.2.1-rc.5'
+        shell: pwsh
+        run: ./maintenance/inject-switch/Build.ps1
+      - name: Attach optional Windows switch executable
+        if: runner.os == 'Windows' && matrix.host == '0.2.1-rc.5'
+        uses: actions/upload-artifact@v4
+        with:
+          name: dsh-inject-switch-windows
+          path: maintenance/inject-switch/dist/dsh-inject-switch.exe
+          retention-days: 14
       - name: Run unit and actual public API contract tests
         shell: bash
         run: |

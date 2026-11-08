@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { isUntestedLiveAsset, reviewScoring, nextTaskCard, taskKey, filterBlockedActions, compareProgress, sessionReadiness, reviewCandidateQueue, decideTaskHandoff, planUntestedAssetTasks } from '../lib/redteam/score-triage.js'
+import { isUntestedLiveAsset, reviewScoring, nextTaskCard, taskKey, filterBlockedActions, compareProgress, sessionReadiness, reviewCandidateQueue, candidateQueuePage, decideTaskHandoff, planUntestedAssetTasks } from '../lib/redteam/score-triage.js'
 
 const rules = [
   { code: 'server-host', re: /服务器权限|命令执行成功/i },
@@ -362,3 +362,35 @@ test('未测资产逐台生成稳定任务，阻塞一台后可继续下一台',
   }))
   assert.equal(planUntestedAssetTasks(many).length, 30)
 })
+
+test('candidate queue pages retain full counts and never promote missing evidence', () => {
+  const assets = [
+    { id: 1, ip: '192.0.2.1', state: 'live', test_status: 'untested' },
+    { id: 2, ip: '192.0.2.2', state: 'live', test_status: 'blocked' },
+  ]
+  const vulns = Array.from({ length: 38 }, (_, i) => ({
+    id: i + 1, asset_id: 1, severity: 'low', status: 'candidate', evidence: i < 33 ? 'observed' : '',
+  }))
+  vulns.push({ id: 40, asset_id: 2, status: 'candidate', evidence: 'old observation' })
+  vulns.push({ id: 41, asset_id: 999, status: 'candidate', evidence: 'unknown scope' })
+  const queue = reviewCandidateQueue(vulns, assets)
+  const first = candidateQueuePage(queue, 'ready', { limit: 20, offset: 0 })
+  const second = candidateQueuePage(queue, 'ready', { limit: 20, offset: 20 })
+  assert.equal(first.total, 33)
+  assert.equal(first.returned, 20)
+  assert.equal(first.nextOffset, 20)
+  assert.equal(second.returned, 13)
+  assert.equal(second.hasMore, false)
+  assert.deepEqual([...first.items, ...second.items].map((v) => v.vuln_id),
+    Array.from({ length: 33 }, (_, i) => i + 1))
+  assert.deepEqual(first.counts, { ready: 33, needs_evidence: 5, needs_scope: 1, deferred: 1 })
+  const missing = candidateQueuePage(queue, 'needs_evidence', { limit: 3, offset: 0 })
+  assert.deepEqual(missing.items.map((v) => v.vuln_id), [34, 35, 36])
+  assert.equal(missing.all_candidates, 40)
+  assert.equal(candidateQueuePage(queue, 'deferred').items[0].vuln_id, 40)
+  assert.equal(candidateQueuePage(queue, 'needs_scope').items[0].vuln_id, 41)
+  assert.throws(() => candidateQueuePage(queue, 'other'), /candidate category/)
+  assert.throws(() => candidateQueuePage(queue, 'ready', { limit: 0 }), /limit/)
+  assert.throws(() => candidateQueuePage(queue, 'ready', { offset: -1 }), /offset/)
+})
+

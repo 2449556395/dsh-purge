@@ -10,7 +10,7 @@ function fixture() {
   db.exec([
     'CREATE TABLE asset (id INTEGER PRIMARY KEY, ip TEXT, state TEXT, test_status TEXT, priority TEXT, segment_cidr TEXT, test_notes TEXT, test_surface TEXT, test_updated_at TEXT)',
     'CREATE TABLE vuln (id INTEGER PRIMARY KEY, asset_id INTEGER, title TEXT, severity TEXT, status TEXT, evidence TEXT, gained TEXT, cve TEXT, target TEXT)',
-    'CREATE TABLE http_evidence (id INTEGER PRIMARY KEY, vuln_id INTEGER, label TEXT, method TEXT, url TEXT, status INTEGER, request TEXT, response TEXT, note TEXT, captured_by TEXT, captured_at TEXT)',
+    'CREATE TABLE http_evidence (id INTEGER PRIMARY KEY, vuln_id INTEGER, asset_id INTEGER, label TEXT, method TEXT, url TEXT, status INTEGER, request TEXT, response TEXT, note TEXT, captured_by TEXT, captured_at TEXT)',
     'CREATE INDEX idx_http_evidence_vuln ON http_evidence(vuln_id)',
   ].join(';') + ';')
   const addAsset = db.prepare("INSERT INTO asset(id, ip, state, test_status, priority) VALUES (?, ?, 'live', 'untested', 'medium')")
@@ -195,6 +195,51 @@ test('asset query open-port and test-status filters do not include closed ports'
     assert.deepEqual(query({ port: 443, test_status: 'blocked' }).items, [])
     assert.deepEqual(query({ ip: '192.0.2.3' }).items.map((row) => row.id), [3])
     assert.deepEqual(query({ sort: 'discovered' }).items.map((row) => row.id), [2, 3, 1])
+  } finally {
+    db.close()
+  }
+})
+
+test('HTTP evidence query returns paged summaries and exact ID detail, preserving unrelated records', () => {
+  const { db, store } = fixture()
+  const selected = {
+    ...store,
+    queryHttpEvidence: RedteamStore.prototype.queryHttpEvidence,
+  }
+  try {
+    const request = 'GET /private HTTP/1.1\\nHost: example.test\\n' + 'x'.repeat(65000)
+    db.prepare('UPDATE http_evidence SET asset_id = ?, request = ?, response = ? WHERE vuln_id = 1')
+      .run(2105, request, 'response'.repeat(10000))
+    const listing = RedteamStore.prototype.queryHttpEvidence.call(selected, 'lab', { limit: 1 })
+    assert.equal(listing.detail, 'summary')
+    assert.equal(listing.total, 2)
+    assert.equal(listing.returned, 1)
+    assert.equal(listing.nextOffset, 1)
+    assert.equal(Object.hasOwn(listing.items[0], 'request'), false)
+    assert.equal(Object.hasOwn(listing.items[0], 'response'), false)
+    assert.equal(JSON.stringify(listing).includes('/private'), false)
+
+    const byVuln = selected.queryHttpEvidence('lab', { vuln_id: 1 })
+    assert.equal(byVuln.total, 1)
+    assert.equal(byVuln.items[0].asset_id, 2105)
+    assert.equal(byVuln.items[0].has_request, true)
+    assert.equal(byVuln.items[0].request_chars, request.length)
+    const byAsset = selected.queryHttpEvidence('lab', { asset_id: 2105 })
+    assert.equal(byAsset.total, 1)
+    assert.equal(byAsset.items[0].vuln_id, 1)
+
+    const full = selected.queryHttpEvidence('lab', { id: byVuln.items[0].id })
+    assert.equal(full.detail, 'full')
+    assert.equal(full.total, 1)
+    assert.equal(full.items[0].request.startsWith('GET /private'), true)
+    assert.match(full.items[0].request, /truncated/)
+    assert.match(full.items[0].response, /truncated/)
+    assert.equal(selected.queryHttpEvidence('lab', { id: 99999 }).total, 0)
+    assert.equal(selected.queryHttpEvidence('lab', { offset: 10 }).hasMore, false)
+    assert.throws(() => selected.queryHttpEvidence('lab', { detail: 'full' }), /requires an exact evidence id/)
+    assert.throws(() => selected.queryHttpEvidence('lab', { id: -5 }), /positive safe integer/)
+    assert.throws(() => selected.queryHttpEvidence('lab', { vuln_id: 1.3 }), /positive safe integer/)
+    assert.throws(() => selected.queryHttpEvidence('lab', { offset: -1 }), /offset/)
   } finally {
     db.close()
   }

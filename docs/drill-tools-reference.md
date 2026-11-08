@@ -214,6 +214,15 @@ _confirmed/exploited 才算成果；claimed 必须用 evidence_upgrade 升级成
 - `q` — 标题/CVE/目标/证据关键词
 - `limit` — 默认 50，最大 200
 
+### `redteam_candidate_queue`
+只读领取按证据准备程度分类的候选漏洞队列：ready（已有证据待核对）、needs_evidence（缺可复核证据）、needs_scope（缺资产关联）、deferred（失活或阻塞目标）。返回全量分类计数与分页后的候选 ID；不会自动确认漏洞、执行扫描或计分。
+
+参数：
+- `engagement`
+- `category` — ready / needs_evidence / needs_scope / deferred，默认 ready
+- `limit` — 默认 15，最大 50
+- `offset` — 从 0 开始分页，返回 nextOffset
+
 ### `redteam_vuln_update`
 更新漏洞状态/严重级/证据（例如验证后置为 confirmed、利用成功后置为 exploited、误报置为 false-positive）。
 
@@ -432,6 +441,18 @@ _隧道必须写 entry_kind（target-http / target-outbound / target-agent）；
 ## E. 攻击链与得分（全程都在写）
 
 _每步都要写 tool（命令原文）与 result（回显），否则报告无法复现；得分点 code 先用 score_list 查。_
+
+### `redteam_http_evidence_query`
+按 HTTP 证据 ID、关联漏洞或资产 ID 查询原始 HTTP 证据。列表默认仅返回摘要、是否有请求/响应、文本长度和分页信息；指定证据 `id` 时默认返回单条完整内容（请求和响应各限制 60000 字符）。这是 `redteam_http_evidence_add` 的只读配套工具，和哈希证据账本 `redteam_evidence_list` 是两类记录。
+
+参数：
+- `engagement`
+- `id` — HTTP 证据条目 ID（指定时默认 full）
+- `vuln_id` — 关联漏洞 ID
+- `asset_id` — 关联资产 ID
+- `detail` — summary / full（full 需要具体 id）
+- `limit` — 默认 20，最大 100
+- `offset` — 从 0 开始分页
 
 ### `redteam_chain_add`
 记录一个攻击链步骤。**报告里「这一步怎么来的」完全靠这条记录**：账号密码怎么来的、冰蝎马怎么上的、隧道怎么搭的，都要在这里用 `tool`（实际命令原文）+ `detail`（为什么这么做、线索从哪来）+ `result`（实际回显/结果）写清楚。攻击链页面与报告按 seq 排序展示。

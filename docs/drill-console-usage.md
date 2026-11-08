@@ -103,6 +103,13 @@
 - 拿到具体的 `vuln #ID` 后，传 `id` 默认读取 `detail: "full"`，保留现有完整证据查看能力。需要批量完整证据时可显式设 `detail: "full"`；只要摘要时可显式设 `detail: "summary"`。
 - `summary` 的 `evidence_present` 仅表示库里已有文本或 HTTP 证据，不表示漏洞已经核实或成功利用。HTTP 原始证据仍保留在本地 SQLite，查询摘要不会删除或修改它。
 
+### 4.8 新增两个只读工具（复核与证据追溯）
+
+- **`redteam_candidate_queue`**：按 `category=ready|needs_evidence|needs_scope|deferred` 获取可分页的候选漏洞清单，同时返回四类的全量计数。返回 `vuln_id` 后，可使用 `redteam_vuln_query(id=...)` 取具体记录。被阻塞的目标单独归入 deferred，不作为可立即复核的候选。
+- **`redteam_http_evidence_query`**：按 `vuln_id` / `asset_id` 寻找实际保存过的 HTTP 证据，列表只返回元数据和报文长度；按具体 `id` 再读取请求与响应正文。适合查找未关联漏洞的证据，以及避免在每次看漏洞时加载全部报文。
+
+这两项均不发起网络连接、不修改数据库，也不将候选证据等同于真实漏洞确认结果。
+
 ## 5. 常见问题
 
 | 现象 | 原因 | 处理 |

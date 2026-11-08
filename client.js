@@ -7779,7 +7779,8 @@ body[data-ds-dark-theme] .rt-scope-testing,.dshp-dock[data-theme="dusk"] .rt-sco
       const used = concurrency && typeof concurrency.used === 'number' ? concurrency.used : null
       const max = concurrency && concurrency.max ? concurrency.max : 3
       const verified = concurrency && concurrency.available === true
-      const totalRoots = concurrency && Array.isArray(concurrency.per_root) ? concurrency.per_root.length : 0
+      const perRoot = concurrency && Array.isArray(concurrency.per_root) ? concurrency.per_root : []
+      const totalRoots = perRoot.length
       const occupancy = !verified
         ? (concurrency && concurrency.used_is_lower_bound && used !== null
           ? '至少在跑 ' + used + ' / 剩余未知' : '占用未知')
@@ -7789,7 +7790,7 @@ body[data-ds-dark-theme] .rt-scope-testing,.dshp-dock[data-theme="dusk"] .rt-sco
       return h('div', { className: 'rt-main' },
         h('div', { className: 'rt-toolbar' },
           h('span', { style: { fontWeight: 600 } }, '作战智能体'),
-          h('span', { className: 'rt-tag rt-tag-passive' }, '并发上限 ' + max),
+          h('span', { className: 'rt-tag rt-tag-passive' }, '单会话上限 ' + max),
           h('span', { className: 'rt-tag' + (verified && totalRoots === 1 ? ' rt-tag-live' : ' rt-tag-warn') }, occupancy),
           h('div', { className: 'rt-spacer' }),
           h('button', { className: 'rt-btn', disabled: busy, onClick: load }, busy ? '读取中…' : '刷新')),
@@ -7799,7 +7800,7 @@ body[data-ds-dark-theme] .rt-scope-testing,.dshp-dock[data-theme="dusk"] .rt-sco
           h('div', { className: 'rt-card' },
             h('h4', null, '并发规则（硬约束）'),
             h('div', { style: { fontSize: 12, lineHeight: 1.7 } },
-              '· 同一靶标**同时最多 ' + max + ' 个执行智能体**；主会话派活前用 `redteam_agent_slot` 占位，满了直接拒绝。',
+              '· 每个主会话的执行智能体上限为 ' + max + '；不同主会话分别统计，不能把总占用当成单会话名额。',
               h('br'),
               '· **默认一个一个派、按顺序推进**；只有确实互不依赖的活才并行。',
               h('br'),
@@ -7814,6 +7815,26 @@ body[data-ds-dark-theme] .rt-scope-testing,.dshp-dock[data-theme="dusk"] .rt-sco
               '⑤ 内网渗透 `internal` —— 走隧道，依次拉起 ①②③④ 做内网', h('br'),
               '⑥ 主会话 `plan` —— 只做计划、派活、汇总、汇报，不动手')),
           h(ConcurrencyCard, { concurrency, onSaved: load }),
+          perRoot.length
+            ? h('div', { className: 'rt-card' },
+                h('h4', null, '各主会话状态 · ' + perRoot.length),
+                perRoot.map((entry, index) => {
+                  const confirmed = entry.available === true && typeof entry.free === 'number'
+                  const count = typeof entry.used === 'number' ? entry.used : null
+                  const status = confirmed
+                    ? '在跑 ' + count + ' / 剩余 ' + entry.free
+                    : (count === null ? '运行状态未知' : '至少在跑 ' + count + ' / 剩余未知')
+                  return h('div', { key: String(entry.owner || index), className: 'rt-kv' },
+                    h('b', { className: 'rt-mono', title: String(entry.owner || '') }, String(entry.owner || '未知会话')),
+                    h('span', null,
+                      h('span', { className: 'rt-tag' + (confirmed ? ' rt-tag-live' : ' rt-tag-warn') }, status),
+                      entry.error
+                        ? h('div', { className: 'rt-err', style: { marginTop: 4 } }, String(entry.error))
+                        : entry.unknown_children
+                          ? h('div', { style: { fontSize: 11, marginTop: 4 } }, '状态不明的子智能体：' + entry.unknown_children)
+                          : null))
+                }))
+            : null,
           h('div', { className: 'rt-card' },
             h('h4', null, '角色提示词（按靶标存，可在这里编辑）'),
             h('div', { style: { fontSize: 11.5, color: 'var(--dsw-alias-label-secondary)', marginBottom: 6 } },
@@ -7848,7 +7869,7 @@ body[data-ds-dark-theme] .rt-scope-testing,.dshp-dock[data-theme="dusk"] .rt-sco
       return h('div', { className: 'rt-card' },
         h('h4', null, '并发数量'),
         h('div', { style: { fontSize: 12, lineHeight: 1.8, marginBottom: 8 } },
-          '同一靶标**同时最多几个执行智能体**。当前生效：**' + (info.max || '?') + '**'
+          '每个主会话**最多几个执行智能体**。当前设置：**' + (info.max || '?') + '**'
           + (used === null ? '（运行状态未知）' : remaining === null
             ? '（已确认在跑 ' + used + '，剩余名额未知或按会话计算）'
             : '（在跑 ' + used + '，剩余 ' + remaining + '）')

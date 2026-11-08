@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { isUntestedLiveAsset, reviewScoring, nextTaskCard, taskKey, filterBlockedActions, compareProgress, sessionReadiness, reviewCandidateQueue, decideTaskHandoff } from '../lib/redteam/score-triage.js'
+import { isUntestedLiveAsset, reviewScoring, nextTaskCard, taskKey, filterBlockedActions, compareProgress, sessionReadiness, reviewCandidateQueue, decideTaskHandoff, planUntestedAssetTasks } from '../lib/redteam/score-triage.js'
 
 const rules = [
   { code: 'server-host', re: /服务器权限|命令执行成功/i },
@@ -338,4 +338,26 @@ test('任务交接：明确阻塞只跳过本任务；无合法结论拒绝生�
   assert.equal(decideTaskHandoff(same, 'blocked').decision, 'skip')
   assert.throws(() => decideTaskHandoff(same, 'success'), /outcome must/)
   assert.throws(() => decideTaskHandoff(null, 'done'), /progress comparison/)
+})
+
+
+test('未测资产逐台生成稳定任务，阻塞一台后可继续下一台', () => {
+  const assets = [
+    { id: 8, ip: '192.0.2.8', state: 'live', test_status: 'untested' },
+    { id: 9, ip: '192.0.2.9', state: 'live', test_status: 'tested' },
+    { id: 12, ip: '192.0.2.12', state: 'live', test_status: 'untested' },
+  ]
+  const actions = planUntestedAssetTasks(assets)
+  assert.deepEqual(actions.map((a) => a.target), ['asset #8', 'asset #12'])
+  assert.equal(actions[0].action, '漏洞发现')
+  assert.match(actions[0].why, /192\.0\.2\.8/)
+  const blockedKey = taskKey(actions[0])
+  const remaining = filterBlockedActions(actions, blockedKey)
+  assert.equal(nextTaskCard(remaining).target, 'asset #12')
+  const ipChanged = planUntestedAssetTasks([{ ...assets[0], ip: '198.51.100.8' }])
+  assert.equal(taskKey(ipChanged[0]), blockedKey)
+  const many = Array.from({ length: 35 }, (_, i) => ({
+    id: i + 1, ip: '192.0.2.' + (i + 1), state: 'live', test_status: 'untested',
+  }))
+  assert.equal(planUntestedAssetTasks(many).length, 30)
 })

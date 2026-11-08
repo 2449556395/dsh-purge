@@ -3,6 +3,7 @@
  * 写进 client.js 里的 DSH_PURGE_DRILL 标记之间。
  *
  * 用法：node scripts/build-client.mjs
+ * 校验：node scripts/build-client.mjs --check（只比较，不写文件）
  */
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -69,6 +70,15 @@ if (!client.includes(BEGIN) || !client.includes(END)) {
 const beginAt = client.indexOf(BEGIN);
 const endAt = client.indexOf(END);
 if (beginAt < 0 || endAt < 0 || endAt < beginAt) throw new Error("drill markers out of order");
-client = client.slice(0, beginAt) + fragment + client.slice(endAt + END.length);
-writeFileSync(clientPath, client);
-console.log("embedded drill client into client.js (" + Buffer.byteLength(fragment) + " bytes fragment)");
+const generated = client.slice(0, beginAt) + fragment + client.slice(endAt + END.length);
+if (process.argv.includes("--check")) {
+  if (generated !== client) {
+    console.error("client.js is stale; run node scripts/build-client.mjs and commit the generated client.js");
+    process.exitCode = 1;
+  } else {
+    console.log("client.js embedded drill matches lib/redteam/client.js");
+  }
+} else {
+  writeFileSync(clientPath, generated);
+  console.log("embedded drill client into client.js (" + Buffer.byteLength(fragment) + " bytes fragment)");
+}

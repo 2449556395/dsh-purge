@@ -4401,6 +4401,9 @@ body[data-ds-dark-theme] .rt-scope-testing,.dshp-dock[data-theme="dusk"] .rt-sco
 .rt-ops-section{border:1px solid var(--rt-line);border-radius:12px;background:var(--rt-paper);padding:15px;min-width:0}
 .rt-ops-section-head{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}
 .rt-ops-section h3{margin:0;font-size:13px;font-weight:650}
+.rt-ops-task-line{display:flex;flex-direction:column;gap:3px;margin-top:9px;padding:9px 10px;border:1px solid var(--rt-line);border-radius:8px;font-size:11.5px;overflow-wrap:anywhere}
+.rt-ops-task-line strong{font-size:12px;font-weight:650}
+.rt-ops-task-line span{color:var(--rt-mute)}
 .rt-ops-subtle{font-size:11.5px;color:var(--rt-mute);line-height:1.65}
 .rt-ops-progress{height:8px;border-radius:999px;background:var(--rt-well);overflow:hidden;margin:12px 0 10px}
 .rt-ops-progress span{display:block;height:100%;background:var(--rt-accent);border-radius:inherit;transition:width .25s ease}
@@ -6751,6 +6754,20 @@ body[data-ds-dark-theme] .rt-scope-testing,.dshp-dock[data-theme="dusk"] .rt-sco
     function OverviewTab(props) {
       const eng = props.engagement
       const snapshot = props.snapshot || {}
+      const [brief, setBrief] = React.useState(null)
+      const [briefError, setBriefError] = React.useState('')
+      React.useEffect(() => {
+        let live = true
+        setBrief(null)
+        setBriefError('')
+        if (!eng) return undefined
+        api({ op: 'taskBrief', engagement: eng }).then((result) => {
+          if (!live) return
+          if (!result || result.ok === false) { setBriefError((result && result.error) || '任务摘要不可用'); return }
+          setBrief(result)
+        }, (error) => { if (live) setBriefError(String((error && error.message) || error)) })
+        return () => { live = false }
+      }, [eng, props.refreshKey])
       const s = snapshot.stats || {}
       const t = snapshot.tests || {}
       const goto = props.onGoto || (() => {})
@@ -6782,6 +6799,8 @@ body[data-ds-dark-theme] .rt-scope-testing,.dshp-dock[data-theme="dusk"] .rt-sco
           : untested > 0
             ? { title: '查看待测资产', detail: '还有 ' + untested + ' 条待测记录，先核对测试范围与状态。', tab: 'assets' }
             : { title: '查看任务报告', detail: '当前没有待测记录，检查已有成果与报告。', tab: 'report' }
+      const taskSuggestion = brief && brief.suggestion ? brief.suggestion : next
+      const counts = (brief && brief.counts) || {}
       const phases = [
         ['01', '资产测绘', 'assets'],
         ['02', '漏洞分析', 'findings'],
@@ -6804,6 +6823,34 @@ body[data-ds-dark-theme] .rt-scope-testing,.dshp-dock[data-theme="dusk"] .rt-sco
         h('div', { className: 'rt-ops-grid' },
           h('section', { className: 'rt-ops-section' },
             h('div', { className: 'rt-ops-section-head' },
+              h('h3', null, '执行与阻塞'),
+              h('span', { className: 'rt-ops-subtle' }, '根据数据库测试状态显示')),
+            briefError ? h('div', { className: 'rt-ops-subtle' }, briefError) : null,
+            !brief && !briefError ? h('div', { className: 'rt-ops-subtle' }, '正在读取任务摘要…') : null,
+            brief ? h('div', { className: 'rt-ops-subtle' },
+              '测试中 ' + testing + ' · 暂停/放弃 ' + (counts.blocked || 0)) : null,
+            brief && brief.active.length === 0 ? h('div', { className: 'rt-ops-subtle' }, '当前没有标记为测试中的资产。') : null,
+            brief ? brief.active.map((item) => h('div', { key: 'run-' + item.id, className: 'rt-ops-task-line' },
+              h('strong', null, '测试中 · asset #' + item.id + ' · ' + item.ip),
+              item.surface ? h('span', null, '测试面：' + item.surface) : null,
+              item.note ? h('span', null, '记录：' + item.note) : null)) : null,
+            brief ? brief.blocked.map((item) => h('div', { key: 'blocked-' + item.id, className: 'rt-ops-task-line' },
+              h('strong', null, (item.status === 'abandoned' ? '已放弃' : '已阻塞') + ' · asset #' + item.id + ' · ' + item.ip),
+              item.note ? h('span', null, '原因/记录：' + item.note) : h('span', null, '尚未记录阻塞原因'),
+              item.surface ? h('span', null, '剩余测试面：' + item.surface) : null)) : null,
+            h('div', { className: 'rt-ops-actions' },
+              h('button', { className: 'rt-btn', onClick: () => goto('assets') }, '查看全部测试记录'))),
+          h('section', { className: 'rt-ops-section' },
+            h('div', { className: 'rt-ops-section-head' },
+              h('h3', null, '候选证据缺口')),
+            brief ? h('div', { className: 'rt-ops-subtle' },
+              '有初步证据待核对 ' + (counts.ready || 0) + ' · 缺可复核证据 ' + (counts.needs_evidence || 0)
+              + ' · 缺资产关联 ' + (counts.needs_scope || 0) + ' · 暂缓核对 ' + (counts.deferred || 0))
+              : h('div', { className: 'rt-ops-subtle' }, '打开此页时读取当前候选记录，不执行扫描。'),
+            h('div', { className: 'rt-ops-actions' },
+              h('button', { className: 'rt-btn', onClick: () => goto('findings') }, '核对漏洞与证据'))),
+          h('section', { className: 'rt-ops-section' },
+            h('div', { className: 'rt-ops-section-head' },
               h('h3', null, '测试状态'),
               h('strong', null, allTests ? (progress + '% 已复核') : '尚无测试记录')),
             h('div', {
@@ -6818,10 +6865,12 @@ body[data-ds-dark-theme] .rt-scope-testing,.dshp-dock[data-theme="dusk"] .rt-sco
               h('button', { className: 'rt-btn', onClick: () => goto('scores') }, '得分目标'))),
           h('section', { className: 'rt-ops-section' },
             h('div', { className: 'rt-ops-section-head' }, h('h3', null, '建议下一步')),
-            h('div', { style: { fontWeight: 650, fontSize: 14, marginBottom: 5 } }, next.title),
-            h('div', { className: 'rt-ops-subtle' }, next.detail),
+            h('div', { style: { fontWeight: 650, fontSize: 14, marginBottom: 5 } },
+              taskSuggestion.title + (taskSuggestion.target ? ' · ' + taskSuggestion.target : '')),
+            h('div', { className: 'rt-ops-subtle' }, taskSuggestion.detail),
+            h('div', { className: 'rt-ops-subtle' }, '这是记录核查建议，不等于智能体正在执行的任务，也不代表已得分。'),
             h('div', { className: 'rt-ops-actions' },
-              h('button', { className: 'rt-btn rt-btn-primary', onClick: () => goto(next.tab) }, '打开对应页面'),
+              h('button', { className: 'rt-btn rt-btn-primary', onClick: () => goto(taskSuggestion.tab) }, '打开对应页面'),
               h('button', { className: 'rt-btn', onClick: () => goto('intel') }, '检索情报'))),
           h('section', { className: 'rt-ops-section' },
             h('div', { className: 'rt-ops-section-head' }, h('h3', null, '证据与交付提醒')),
@@ -7330,7 +7379,14 @@ body[data-ds-dark-theme] .rt-scope-testing,.dshp-dock[data-theme="dusk"] .rt-sco
         }, (e) => { if (my === seq.current) setErr(String((e && e.message) || e)) })
           .finally(() => { if (my === seq.current) inflight.current = false })
       }
-      React.useEffect(() => { seq.current += 1; load() }, [eng, refreshKey])
+      React.useEffect(() => {
+        /* 换靶标/刷新时放弃旧在途守卫，否则旧请求晚回来会让轮询永久卡住。 */
+        seq.current += 1
+        inflight.current = false
+        setData(null); setErr(null); setAt(null)
+        load()
+        return () => { seq.current += 1; inflight.current = false }
+      }, [eng, refreshKey])
       React.useEffect(() => {
         if (!eng || !auto) return undefined
         const timer = setInterval(load, 5000)
@@ -8193,7 +8249,7 @@ body[data-ds-dark-theme] .rt-scope-testing,.dshp-dock[data-theme="dusk"] .rt-sco
               h('button', { className: 'rt-btn rt-btn-primary', disabled: creating, onClick: () => openEngagement() },
                 creating ? '创建中…' : '创建靶标'))))
       } else if (st.tab === 'intel') body = h(IntelTab, { engagement: eng, refreshKey: refreshKey })
-      else if (st.tab === 'overview') body = h(OverviewTab, { engagement: eng, snapshot: currentSnapshot, refreshKey: refreshKey, onGoto: (tab) => setSt(Object.assign({}, st, { tab })) })
+      else if (st.tab === 'overview') body = h(OverviewTab, { engagement: eng, snapshot: currentSnapshot, refreshKey: refreshKey, onGoto: (tab) => { markTabSeen(tab); setUI({ tab }); setRefreshKey((k) => k + 1) } })
       else if (st.tab === 'assets') body = h(AssetsTab, { engagement: eng, snapshot: currentSnapshot, refreshKey: refreshKey, onRefresh: refreshAll, onData: () => loadSnapshot(eng) })
       else if (st.tab === 'guide') body = h(GuideTab, { engagement: eng })
       else if (st.tab === 'testing') body = h(AssetsTab, { engagement: eng, snapshot: currentSnapshot, refreshKey: refreshKey, onRefresh: refreshAll, onData: () => loadSnapshot(eng) })

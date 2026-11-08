@@ -48,7 +48,9 @@
 
 完成当前 `focus` 后，调用 `redteam_progress_check`，把原来的 `focus.before` 完整传入：只有真实的计分变化才算分数增长，新增记录与实测成果分开描述。
 
-若任务遇到确切阻塞，不要原地重复。可以在 `redteam_next_action` 传入 `blocked_task_key` 跳过一项，也可以传入 `blocked_task_keys`，其值是一个 **JSON 数组字符串**，例如 `["复核有证据的候选漏洞:vuln #12","核对候选证据缺口:vuln #15"]`。条件改变后移除对应 key，避免永久跳过已经恢复的工作。新旧参数可以同时使用。 批量 `blocked_task_keys` 最多接受 100 条；候选漏洞的四类任务也会在取前 30 条之前排除相同动作与目标的受阻任务。
+若任务遇到确切阻塞，不要原地重复。**需要跨轮次记住的阻塞**，调用 `redteam_task_block(action="block", task_key=focus.task_key, reason="实际原因")`，原因会写入当前演练的 SQLite；后续 `redteam_next_action` 自动排除已保存的阻塞项，无须再次传递参数。条件恢复时使用 `redteam_task_block(action="unblock", task_key=...)` 解除；`action="list"` 可查看保存的原因及时间。
+
+只想**临时**跳过本次任务，仍可在 `redteam_next_action` 传 `blocked_task_key`，或传 `blocked_task_keys` 的 JSON 数组字符串（最多 100 条），例如 `["复核有证据的候选漏洞:vuln #12"]`。临时参数、`previous_task` 都不会悄悄保存成永久阻塞记录。候选队列先过滤阻塞项，再选出最多 30 条，避免任务饥饿。
 
 ### 4.2 结果驱动交接：一轮完成后决定继续、跳过还是暂停
 
@@ -64,7 +66,7 @@
 - `skip`：上一轮明确阻塞，自动排除该动作与目标的组合，不在同一条件下重试。
 - `hold`：结果不确定、统计没有变化或只有记录修正；`focus.status=needs-review`，本轮不派新任务，先解释真实结果。
 
-这个决策**不自动执行任何工具或攻击**；它只让现有指挥智能体减少一次统计对账调用和无效续派。以前的 `blocked_task_key(s)` 和单独的 `redteam_progress_check` 仍能正常使用。
+这个决策**不自动执行任何工具或攻击，也不自动保存阻塞信息**。如果 `handoff.decision=skip` 且需要后续轮次继续跳过该任务，应显式调用 `redteam_task_block` 保存原因。以前的 `blocked_task_key(s)` 和单独的 `redteam_progress_check` 仍能正常使用。
 
 ### 4.3 大型演练：不遗漏后面的资产和漏洞
 

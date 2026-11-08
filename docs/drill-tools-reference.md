@@ -37,6 +37,18 @@ _一次演练只开一个靶标；子智能体并发上限默认 3，派活前�
 - 原始 HTTP 请求/响应**不会**放进任务上下文；需要时用 `redteam_http_evidence_query(id=...)` 取具体证据。
 - 仅支持带 ID 的任务目标。其它任务仍按 `first_tool` 指引调用对应工具；本工具不执行扫描、不改变状态或分数。
 
+### `redteam_task_block`
+当前演练的**持久阻塞任务记录**，与 `redteam_next_action` 共享 SQLite。只有确认了真实阻塞原因才写入；不会自动执行测试或记分。
+
+参数：
+- `engagement` — 可选，默认当前会话演练
+- `action` — 必填，`block` 记录阻塞、`unblock` 解除、`list` 查看已阻塞任务
+- `task_key` — `block` / `unblock` 时必填，原样传入 `focus.task_key`
+- `reason` — `block` 时必填，写清确切阻塞原因或缺失条件
+- `limit` / `offset` — `list` 的分页参数，默认 30 条，最多 100 条
+
+后续 `redteam_next_action` **自动读取**所有持久阻塞键；`previous_task` 与临时 `blocked_task_key(s)` 保持只读、不会自动落库。条件发生变化后要明确 `unblock`，不把暂时故障永久封禁。
+
 ### `redteam_agent_slot`
 【主会话派活前后用】执行智能体的并发闸门：同一靶标**最多同时 3 个**在跑（可用 REDTEAM_MAX_AGENTS 配置）。action=status 看还剩几个名额与谁在跑；action=acquire 占一个名额（满了会直接拒绝，**不要重试硬塞**）；action=release 释放（子智能体结束时服务端也会自动释放）。
 

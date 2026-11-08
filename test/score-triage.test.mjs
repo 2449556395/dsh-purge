@@ -351,7 +351,7 @@ test('未测资产逐台生成稳定任务，阻塞一台后可继续下一台',
   assert.deepEqual(actions.map((a) => a.target), ['asset #8', 'asset #12'])
   assert.equal(actions[0].action, '漏洞发现')
   assert.match(actions[0].why, /192\.0\.2\.8/)
-  assert.equal(nextTaskCard(actions).first_tool, 'redteam_asset_get → subagent redteamRole: vuln-scan')
+  assert.equal(nextTaskCard(actions).first_tool, 'redteam_task_context(target="asset #8") → subagent redteamRole: vuln-scan')
   const blockedKey = taskKey(actions[0])
   const remaining = filterBlockedActions(actions, blockedKey)
   assert.equal(nextTaskCard(remaining).target, 'asset #12')

@@ -110,6 +110,15 @@
 
 这两项均不发起网络连接、不修改数据库，也不将候选证据等同于真实漏洞确认结果。
 
+### 4.9 一次读取下一张任务卡的上下文
+
+拿到 `redteam_next_action` 的 `focus.target`（例如 `asset #8` / `vuln #12`），可直接调用 `redteam_task_context(target=...)`。也接受 `focus.task_key`（动作:目标）。
+
+- 资产任务：显示最近测试记录、阻塞次数、精简端口/指纹、关联漏洞及直接关联该资产的 HTTP 证据 ID。
+- 漏洞任务：显示关联资产的测试状态、漏洞证据摘要和按漏洞 ID 查到的 HTTP 证据 ID。
+- 要看原始证据再调用 `redteam_http_evidence_query(id=...)`；要更新状态仍用现有 `redteam_asset_test` / `redteam_vuln_update`。
+- 这是只读数据关联，不代表目标已获授权，也不会自动得分。缺少资产关联时明确显示 `missing` 或 `unlinked`。
+
 ## 5. 常见问题
 
 | 现象 | 原因 | 处理 |
@@ -132,7 +141,7 @@
 
 ## 6.5 工具逐个注释
 
-64 个 `redteam_*` 工具的作用、参数、调用时机见 [drill-tools-reference.md](./drill-tools-reference.md)（由 `lib/redteam/tools.js` 自动抽取，改代码后重跑生成脚本即可同步）。
+`redteam_*` 工具的作用、参数、调用时机见 [drill-tools-reference.md](./drill-tools-reference.md)（由 `lib/redteam/tools.js` 自动抽取，改代码后重跑生成脚本即可同步）。
 
 ## 7. 想省事就让 AI 全做
 

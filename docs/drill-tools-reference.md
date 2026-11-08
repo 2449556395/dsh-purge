@@ -2,7 +2,7 @@
 
 > 由 `lib/redteam/tools.js` 的 `name/description/parameters` 自动抽取生成，改完代码重跑脚本即可同步。
 
-共 64 个工具。分组只是使用习惯，不是权限边界。
+具体工具数量及定义以 `lib/redteam/tools.js` 为准。分组只是使用习惯，不是权限边界。
 
 ## A. 开局与调度（主会话/指挥用）
 
@@ -23,6 +23,19 @@ _一次演练只开一个靶标；子智能体并发上限默认 3，派活前�
 
 ### `redteam_session_info`
 查看**当前会话绑定的是哪个靶标**（会话 id、父会话、根会话、绑定链）。多会话同时开工时，先跑它确认自己没串到别人的靶标上。
+
+### `redteam_task_context`
+【只读】把 `redteam_next_action` 返回的 `focus.target` 或 `focus.task_key` 直接作为输入，一次读取核查目标的必要上下文，减少多次查库。
+
+参数：
+- `engagement` — 当前靶标（默认会话绑定的靶标）
+- `target` — 必填，`asset #8` / `vuln #12`，或者带动作前缀的 `focus.task_key`
+
+返回内容：
+- 资产任务：资产 IP、开放端口概要、最近三条测试记录、受阻次数、关联漏洞摘要以及直接挂在资产上的 HTTP 证据索引。
+- 漏洞任务：该漏洞摘要、关联资产测试状态、按 `vuln_id` 关联的 HTTP 证据索引。
+- 原始 HTTP 请求/响应**不会**放进任务上下文；需要时用 `redteam_http_evidence_query(id=...)` 取具体证据。
+- 仅支持带 ID 的任务目标。其它任务仍按 `first_tool` 指引调用对应工具；本工具不执行扫描、不改变状态或分数。
 
 ### `redteam_agent_slot`
 【主会话派活前后用】执行智能体的并发闸门：同一靶标**最多同时 3 个**在跑（可用 REDTEAM_MAX_AGENTS 配置）。action=status 看还剩几个名额与谁在跑；action=acquire 占一个名额（满了会直接拒绝，**不要重试硬塞**）；action=release 释放（子智能体结束时服务端也会自动释放）。

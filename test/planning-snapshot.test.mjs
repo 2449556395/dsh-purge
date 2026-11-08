@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { DatabaseSync } from 'node:sqlite'
 import { RedteamStore, dispatch } from '../lib/redteam/store-core.js'
+import { compactVuln } from '../lib/redteam/query-options.js'
 import { reviewCandidateQueue, reviewScoring } from '../lib/redteam/score-triage.js'
 
 function fixture() {
@@ -130,6 +131,70 @@ test('taskBrief shows factual active and blocked notes alongside evidence gaps',
     assert.equal(result.suggestion.target, 'vuln #1')
     assert.equal(result.suggestion.tab, 'findings')
     assert.match(result.note, /只读核查建议/)
+  } finally {
+    db.close()
+  }
+})
+
+test('vulnerability list summary omits large HTTP bodies without losing evidence counts', () => {
+  const { db, store } = fixture()
+  try {
+    const payload = 'GET /proof HTTP/1.1\n' + 'x'.repeat(70000)
+    db.prepare('UPDATE http_evidence SET request = ? WHERE vuln_id = 1').run(payload)
+    const page = RedteamStore.prototype.listVulns.call(store, 'lab', {
+      limit: 50, offset: 0, withHttpEvidence: false,
+    })
+    assert.equal(page.total, 1103)
+    assert.equal(page.items.length, 50)
+    assert.equal(Object.hasOwn(page.items[0], 'http_evidence'), false)
+    const one = RedteamStore.prototype.listVulns.call(store, 'lab', {
+      id: 1, withHttpEvidence: false,
+    })
+    assert.equal(one.items[0].http_evidence_count, 1)
+    assert.equal(Object.hasOwn(one.items[0], 'http_evidence'), false)
+    const summary = compactVuln(one.items[0])
+    assert.equal(summary.id, 1)
+    assert.equal(summary.evidence_present, true)
+    assert.equal(summary.http_evidence_count, 1)
+    assert.equal(Object.hasOwn(summary, 'http_evidence'), false)
+    assert.equal(JSON.stringify(summary).includes('/proof'), false)
+    const empty = RedteamStore.prototype.listVulns.call(store, 'lab', {
+      id: 2, withHttpEvidence: false,
+    })
+    assert.equal(empty.items[0].http_evidence_count, 0)
+    assert.equal(compactVuln(empty.items[0]).evidence_present, false)
+    const full = RedteamStore.prototype.listVulns.call(store, 'lab', { id: 1 })
+    assert.equal(full.items[0].http_evidence.length, 1)
+    assert.match(full.items[0].http_evidence[0].request, /truncated/)
+  } finally {
+    db.close()
+  }
+})
+
+test('asset query open-port and test-status filters do not include closed ports', () => {
+  const db = new DatabaseSync(':memory:')
+  try {
+    db.exec([
+      'CREATE TABLE asset (id INTEGER PRIMARY KEY, ip TEXT, ip_int INTEGER, state TEXT, test_status TEXT, priority TEXT, discovered_at TEXT, first_seen TEXT)',
+      'CREATE TABLE port (id INTEGER PRIMARY KEY, asset_id INTEGER, port INTEGER, state TEXT)',
+      "INSERT INTO asset VALUES (1, '192.0.2.1', 1, 'live', 'untested', 'high', '2026-11-06', '2026-11-06')",
+      "INSERT INTO asset VALUES (2, '192.0.2.2', 2, 'live', 'blocked', 'high', '2026-11-08', '2026-11-08')",
+      "INSERT INTO asset VALUES (3, '192.0.2.3', 3, 'live', 'tested', 'medium', '2026-11-07', '2026-11-07')",
+      "INSERT INTO port VALUES (1, 1, 443, 'open')",
+      "INSERT INTO port VALUES (2, 2, 443, 'closed')",
+      "INSERT INTO port VALUES (3, 3, 80, 'open')",
+    ].join('; ') + ';')
+    const store = {
+      db: () => db,
+      assetChildren: () => ({ ports: new Map(), names: new Map(), fingerprints: new Map() }),
+      assetRow: (_db, row) => ({ id: row.id, ip: row.ip, test_status: row.test_status }),
+    }
+    const query = (options) => RedteamStore.prototype.listAssets.call(store, 'lab', options)
+    assert.deepEqual(query({ port: 443, sort: 'ip' }).items.map((row) => row.id), [1])
+    assert.deepEqual(query({ test_status: 'blocked' }).items.map((row) => row.id), [2])
+    assert.deepEqual(query({ port: 443, test_status: 'blocked' }).items, [])
+    assert.deepEqual(query({ ip: '192.0.2.3' }).items.map((row) => row.id), [3])
+    assert.deepEqual(query({ sort: 'discovered' }).items.map((row) => row.id), [2, 3, 1])
   } finally {
     db.close()
   }

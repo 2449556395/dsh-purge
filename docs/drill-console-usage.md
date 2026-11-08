@@ -66,6 +66,12 @@
 
 这个决策**不自动执行任何工具或攻击**；它只让现有指挥智能体减少一次统计对账调用和无效续派。以前的 `blocked_task_key(s)` 和单独的 `redteam_progress_check` 仍能正常使用。
 
+### 4.3 大型演练：不遗漏后面的资产和漏洞
+
+`redteam_next_action` 使用事实库的**精简全量决策视图**，不受资产列表 2,000 条和漏洞列表 1,000 条的单页限制。它只读取资产的状态、漏洞候选及确认状态，以及“是否有实际 HTTP 证据”标记；不为了排序把原始请求/响应全文搬进任务卡。返回的 `state.assets_truncated` 与 `state.vulns_truncated` 为 `false` 时，表示这次决策已覆盖整个现有演练库（`vulns_relevant` 只统计 candidate/confirmed/exploited）。这不意味着数据库在其他进程并发写入时具有跨查询事务快照。
+
+人工或智能体要看完整详情时，使用 `redteam_asset_query` 或 `redteam_vuln_query` 的 `limit`、`offset` 翻页（工具单次最多返回 200 条）。输出中的 `hasMore` 与 `nextOffset` 告诉下一页的位置，直到没有后续页。查询顺序有稳定的记录 ID 决胜项；如果正在同时新增/删除数据，建议刷新查询以避免传统 OFFSET 分页的移动边界问题。
+
 ## 5. 常见问题
 
 | 现象 | 原因 | 处理 |

@@ -1974,8 +1974,12 @@ body[data-ds-dark-theme] .dshp-launch{background:color-mix(in srgb,var(--dsw-ali
 						.then((r) => r.json())
 						.then((d) => {
 							if (ticket !== actionTicket.current) return;
-							if (!d.ok || responseNeedsPrompt(d)) {
+							if (responseNeedsPrompt(d)) {
 								rejectNeedPrompt(tr);
+								return;
+							}
+							if (!d || d.ok === false) {
+								setNotice({ kind: "error", text: tr("err.save", { error: (d && d.error) || "bad response" }) });
 								return;
 							}
 							if (typeof d.content === "string") {
@@ -2007,8 +2011,6 @@ body[data-ds-dark-theme] .dshp-launch{background:color-mix(in srgb,var(--dsw-ali
 				if (!defaultOverride) return;
 				const tr = t;
 				const ticket = ++actionTicket.current;
-				overrideRef.current = defaultOverride;
-				setOverride(defaultOverride);
 				setPatchBusy(true);
 				setNotice({ kind: "idle", text: "" });
 				apiJson("/dsh-purge/override", {
@@ -2022,10 +2024,9 @@ body[data-ds-dark-theme] .dshp-launch{background:color-mix(in srgb,var(--dsw-ali
 							setNotice({ kind: "error", text: tr("err.save", { error: (d && d.error) || "" }) });
 							return;
 						}
-						if (typeof d.content === "string") {
-							overrideRef.current = d.content;
-							setOverride(d.content);
-						}
+						const saved = typeof d.content === "string" ? d.content : defaultOverride;
+						overrideRef.current = saved;
+						setOverride(saved);
 						promptDirtyRef.current = false;
 						setNotice({ kind: "ok", text: tr("saved.restoreInject") });
 					})

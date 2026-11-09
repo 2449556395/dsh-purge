@@ -21,6 +21,8 @@ test('deleting selected target closes SQLite and switches to a surviving target'
   const deleted = dispatch(store, { op: 'deleteEngagement', id: second, confirm: second })
   assert.equal(deleted.ok, true)
   assert.equal(deleted.deleted, true)
+  assert.equal(deleted.archived, true)
+  assert.ok(existsSync(join(deleted.archive_path, 'assets.db')))
   assert.equal(deleted.current, first)
   assert.equal(store.handles.has(second), false)
   assert.equal(existsSync(store.dirOf(second)), false)
@@ -40,6 +42,8 @@ test('orphan directory without assets.db can be deleted without creating a datab
   const result = dispatch(store, { op: 'deleteEngagement', id: orphan, confirm: orphan })
   assert.equal(result.ok, true)
   assert.equal(result.deleted, true)
+  assert.equal(result.archived, true)
+  assert.equal(readFileSync(join(result.archive_path, 'notes.txt'), 'utf8'), 'incomplete')
   assert.equal(result.current, null)
   assert.equal(existsSync(store.dirOf(orphan)), false)
   assert.equal(store.handles.size, 0)
@@ -72,4 +76,17 @@ test('delete requires exact confirmation and refuses path traversal', (t) => {
   }
   assert.ok(existsSync(store.dbPathOf(id)))
   assert.ok(existsSync(root))
+})
+
+test('reusing an archived engagement id keeps all earlier archive copies', (t) => {
+  const { store } = fixture(t)
+  const id = store.openEngagement('repeat').id
+  const first = dispatch(store, { op: 'deleteEngagement', id, confirm: id })
+  assert.equal(first.archived, true)
+  store.openEngagement('repeat')
+  const second = dispatch(store, { op: 'deleteEngagement', id, confirm: id })
+  assert.equal(second.archived, true)
+  assert.notEqual(first.archive_path, second.archive_path)
+  assert.ok(existsSync(join(first.archive_path, 'assets.db')))
+  assert.ok(existsSync(join(second.archive_path, 'assets.db')))
 })

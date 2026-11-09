@@ -16,7 +16,11 @@ concurrency:
 jobs:
   release:
     # 上游保持 master 自动发布；wxcvm fork 只允许在 master 上手动触发，避免每次合并发布。
-    if: github.repository == 'YuJunZhiXue/dsh-purge' || (github.repository == 'wxcvm/dsh-purge' && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/master')
+    if: >-
+      github.repository == 'YuJunZhiXue/dsh-purge' ||
+      (github.repository == 'wxcvm/dsh-purge' && github.ref == 'refs/heads/master' &&
+       (github.event_name == 'workflow_dispatch' ||
+        (github.event_name == 'push' && startsWith(github.event.head_commit.message, 'release: v1.1.92-wxcvm.3'))))
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -37,10 +41,6 @@ jobs:
           set -euo pipefail
           version="$(node -p "require('./package.json').version")"
           tag="v${version}"
-          if gh release view "$tag" >/dev/null 2>&1; then
-            echo "already published: $tag"
-            exit 0
-          fi
           notes="release-notes.md"
           if [ "$GITHUB_REPOSITORY" = "wxcvm/dsh-purge" ]; then
             notes="release-notes-wxcvm.md"
@@ -50,21 +50,30 @@ jobs:
             echo "$notes 第一行必须是 # ${version}，现在是: ${first}"
             exit 1
           fi
-          zip="dsh-purge-${version}.zip"
-          if git rev-parse -q --verify "refs/tags/${tag}^{}" >/dev/null; then
-            commit="$(git rev-parse "refs/tags/${tag}^{}")"
-            git archive --format=zip --prefix="dsh-purge-${version}/" --output="$zip" "$commit"
-            gh release create "$tag" --title "$tag" --notes-file "$notes"
-          else
-            git archive --format=zip --prefix="dsh-purge-${version}/" --output="$zip" HEAD
-            args=(release create "$tag" --target "$GITHUB_SHA" --title "$tag" --notes-file "$notes")
-            case "$version" in
-              *beta*|*alpha*|*rc*|*wxcvm*) args+=(--prerelease) ;;
-            esac
-            gh "${args[@]}"
+          zip="dsh-purge-$version.zip"
+          # Retry with the tag's exact source revision rather than moving master.
+          commit="$GITHUB_SHA"
+          if git rev-parse -q --verify "refs/tags/$tag^{}" >/dev/null; then
+            commit="$(git rev-parse "refs/tags/$tag^{}")"
           fi
+          git archive --format=zip --prefix="dsh-purge-$version/" --output="$zip" "$commit"
           test -s "$zip"
-          # Hash the exact bytes attached to the Release, not a separate archive.
+          archived_version="$(unzip -p "$zip" "dsh-purge-$version/package.json" |
+            node -e "process.stdout.write(JSON.parse(require('fs').readFileSync(0,'utf8')).version)")"
+          test "$archived_version" = "$version"
+          if [ "$GITHUB_REPOSITORY" = "wxcvm/dsh-purge" ]; then
+            for file in client.js lib/redteam/client.js lib/redteam/store-core.js scripts/update-desktop-fork.ps1; do
+              unzip -Z1 "$zip" | grep -Fx "dsh-purge-$version/$file" >/dev/null
+            done
+          fi
           sha256sum "$zip" > SHA256SUMS.txt
+          if ! gh release view "$tag" >/dev/null 2>&1; then
+            case "$version" in
+              *beta*|*alpha*|*rc*|*wxcvm*)
+                gh release create "$tag" --target "$commit" --title "$tag" --notes-file "$notes" --prerelease ;;
+              *)
+                gh release create "$tag" --target "$commit" --title "$tag" --notes-file "$notes" ;;
+            esac
+          fi
           gh release upload "$tag" "$zip" SHA256SUMS.txt --clobber
-          echo "published https://github.com/${GITHUB_REPOSITORY}/releases/tag/${tag}"
+          echo "published https://github.com/$GITHUB_REPOSITORY/releases/tag/$tag"

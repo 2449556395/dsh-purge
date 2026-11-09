@@ -6711,16 +6711,25 @@ body[data-ds-dark-theme] .rt-scope-testing,.dshp-dock[data-theme="dusk"] .rt-sco
       const [pf, setPf] = React.useState(null)
       const [busy, setBusy] = React.useState(false)
       const [msg, setMsg] = React.useState('')
-      const runPreflight = () => {
+      const runSkillCheck = () => {
         if (busy) return
         setBusy(true); setMsg('')
-        api({ op: 'preflight' })
-          .then((r) => { setBusy(false); setPf(r || null) })
-          .catch((e) => { setBusy(false); setMsg(String((e && e.message) || e)) })
+        api({ op: 'skillCatalog', refresh: true })
+          .then((r) => {
+            setBusy(false)
+            if (!r || r.ok === false) {
+              setPf(null)
+              setMsg((r && r.error) || '技能检查失败')
+              return
+            }
+            setPf(r)
+          })
+          .catch((e) => { setBusy(false); setPf(null); setMsg(String((e && e.message) || e)) })
       }
-      const summary = (pf && (pf.summary || pf.all_checked)) || null
-      const onboarding = (pf && pf.onboarding) || null
-      const missing = (onboarding && onboarding.missing) || []
+      const summary = pf && pf.availability && pf.availability.summary
+      const missing = pf ? (pf.items || [])
+        .filter((s) => s.library !== 'official')
+        .flatMap((s) => (s.problems || []).map((problem) => s.name + '：' + problem)) : []
       const steps = [
         '没有靶标时，先在面板里输入单位名称 → 「创建靶标」。',
         '「环境适配」只填写本轮需要的工具；FOFA 与 VPS 是按任务选择的可选资源，不必一次配齐。',
@@ -6758,16 +6767,22 @@ body[data-ds-dark-theme] .rt-scope-testing,.dshp-dock[data-theme="dusk"] .rt-sco
         h('div', { className: 'rt-card' },
           h('h4', null, '本机体检'),
           h('div', { style: { display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' } },
-            h('button', { className: 'rt-btn rt-btn-primary', disabled: busy, onClick: runPreflight },
-              busy ? '检查中…' : '跑一次 redteam_preflight'),
+            h('button', { className: 'rt-btn rt-btn-primary', disabled: busy, onClick: runSkillCheck },
+              busy ? '检查中…' : '检查技能与宿主注册'),
             summary
-              ? h('span', { style: { fontSize: 12 } }, '技能 ' + summary.available + ' / ' + summary.total + ' 可用')
-              : null),
+              ? h('span', { style: { fontSize: 12 } }, '正文可读 ' + summary.available + ' / ' + summary.total)
+              : null,
+            pf ? h('span', { style: { fontSize: 12 } },
+              pf.registryState === 'listed' ? '宿主已列出 ' + (pf.hostListedCount || 0)
+                : '宿主注册未确认（' + (pf.registryState || '未知') + '）') : null),
           missing.length
             ? h('div', { style: { marginTop: 8, fontSize: 12 } },
                 h('div', { style: { fontWeight: 600, marginBottom: 4 } }, '还缺：'),
                 h('ul', { style: { margin: '0 0 0 18px', lineHeight: 1.8 } }, missing.map((m, i) => h('li', { key: i }, m))))
-            : (pf ? h('div', { style: { marginTop: 8, fontSize: 12, color: 'var(--dsw-alias-label-secondary)' } }, '没有阻塞项。') : null),
+            : (pf ? h('div', { style: { marginTop: 8, fontSize: 12, color: 'var(--dsw-alias-label-secondary)' } },
+                '未发现已读取技能的配置缺项；不等于工具或凭据已可使用。') : null),
+          h('div', { style: { fontSize: 11, color: 'var(--dsw-alias-label-secondary)', marginTop: 8 } },
+            '这是宿主技能目录和文件检查；完整平台能力预检请在 AI 会话调用 redteam_preflight。'),
           msg ? h('div', { className: 'rt-err' }, msg) : null,
         ),
         h('div', { className: 'rt-card' },
@@ -7569,12 +7584,18 @@ body[data-ds-dark-theme] .rt-scope-testing,.dshp-dock[data-theme="dusk"] .rt-sco
       const markTunnel = (t, status) => {
         setMsg(null)
         api({ op: 'updateTunnel', engagement: eng, id: t.id, patch: { status: status, check_note: '界面手动标记' } })
-          .then(() => load(), (e) => setMsg({ err: String((e && e.message) || e) }))
+          .then((r) => {
+            if (!r || r.ok === false) { setMsg({ err: (r && r.error) || '更新通道失败' }); return }
+            load()
+          }, (e) => setMsg({ err: String((e && e.message) || e) }))
       }
       const markShell = (w, status) => {
         setMsg(null)
         api({ op: 'updateWebshell', engagement: eng, id: w.id, patch: { status: status, check_note: '界面手动标记' } })
-          .then(() => load(), (e) => setMsg({ err: String((e && e.message) || e) }))
+          .then((r) => {
+            if (!r || r.ok === false) { setMsg({ err: (r && r.error) || '更新 WebShell 失败' }); return }
+            load()
+          }, (e) => setMsg({ err: String((e && e.message) || e) }))
       }
 
       const sessCollapse = useCollapse('sessions:' + eng)

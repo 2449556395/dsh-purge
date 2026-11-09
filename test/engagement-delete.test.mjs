@@ -90,3 +90,51 @@ test('reusing an archived engagement id keeps all earlier archive copies', (t) =
   assert.ok(existsSync(join(first.archive_path, 'assets.db')))
   assert.ok(existsSync(join(second.archive_path, 'assets.db')))
 })
+
+test('archived workspaces can be listed and restored with their database and metadata intact', (t) => {
+  const { store } = fixture(t)
+  const id = store.openEngagement('restore-me').id
+  const archived = dispatch(store, { op: 'deleteEngagement', id, confirm: id })
+  assert.equal(archived.archived, true)
+  const listed = dispatch(store, { op: 'listArchivedEngagements' })
+  assert.equal(listed.ok, true)
+  assert.equal(listed.items.length, 1)
+  assert.equal(listed.items[0].id, id)
+  assert.equal(dispatch(store, { op: 'restoreEngagement', archive: listed.items[0].archive, confirm: 'wrong' }).ok, false)
+  const restored = dispatch(store, { op: 'restoreEngagement', archive: listed.items[0].archive, confirm: listed.items[0].archive })
+  assert.equal(restored.ok, true)
+  assert.equal(restored.restored, true)
+  assert.ok(existsSync(store.dbPathOf(id)))
+  assert.equal(existsSync(archived.archive_path), false)
+  assert.equal(store.listEngagements()[0].id, id)
+  assert.equal(dispatch(store, { op: 'listArchivedEngagements' }).items.length, 0)
+})
+
+test('restore rejects collisions, malformed names, and symlinked archive folders without overwriting', (t) => {
+  const { store } = fixture(t)
+  const id = store.openEngagement('collision').id
+  const archived = dispatch(store, { op: 'deleteEngagement', id, confirm: id })
+  store.openEngagement('collision')
+  const result = dispatch(store, { op: 'restoreEngagement', archive: archived.archive_path.split(/[\\/]/).pop(),
+    confirm: archived.archive_path.split(/[\\/]/).pop() })
+  assert.equal(result.ok, false)
+  assert.match(result.error, /already exists/)
+  assert.ok(existsSync(archived.archive_path))
+  assert.ok(existsSync(store.dbPathOf(id)))
+  for (const archive of ['../collision', '..', 'not-an-archive']) {
+    assert.equal(dispatch(store, { op: 'restoreEngagement', archive, confirm: archive }).ok, false)
+  }
+})
+
+test('orphan archived workspaces can be restored without manufacturing an assets.db', (t) => {
+  const { store } = fixture(t)
+  const id = 'orphan-restore'
+  mkdirSync(store.dirOf(id), { recursive: true })
+  writeFileSync(join(store.dirOf(id), 'notes.txt'), 'preserve me')
+  const archive = dispatch(store, { op: 'deleteEngagement', id, confirm: id })
+  const result = dispatch(store, { op: 'restoreEngagement', archive: archive.archive_path.split(/[\\/]/).pop(),
+    confirm: archive.archive_path.split(/[\\/]/).pop() })
+  assert.equal(result.restored, true)
+  assert.equal(readFileSync(join(store.dirOf(id), 'notes.txt'), 'utf8'), 'preserve me')
+  assert.equal(existsSync(store.dbPathOf(id)), false)
+})

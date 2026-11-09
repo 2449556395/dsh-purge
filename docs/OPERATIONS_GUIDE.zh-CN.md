@@ -149,7 +149,7 @@ dsh-purge --runtime-status
 
 它能检查 Node.js 的 `node:sqlite` 能力、随包 Skill 元数据、复制文件与红队预设路径。**它不会自动安装工具或证明 Skill 已被宿主加载。**
 
-- `sqliteAvailable: false`：表示当前 Node 运行环境下无法直接使用该 SQLite 模块；先核对真实 Node 版本及启动参数。
+- `sqliteAvailable: false`：当前运行的 Node 无法使用 `node:sqlite`。**完整的红队 SQLite 资产库需要 Node 22.13+（推荐 24）**；Node 18/20 不含该内建模块。`package.json` 的 `>=18` 是整个插件原有安装声明，不保证每项红队功能可用；本次不更改全插件最低版本或额外添加兼容门禁。
 - `skills.filesReady: false`：表示技能目录、预设路径或文件内容尚未满足诊断条件；查看 `missing`、`different`、`invalid`。
 - `hostInvocable: null`：是正常的「未检测宿主」结果，不表示可用，也不表示不可用。
 - 要确认模型真的能使用 Skill，需在**实际运行中的 DSH 宿主原生 Skill 列表**或对应功能中查证；不要把文件显示出来当成可调用。

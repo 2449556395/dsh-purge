@@ -18,8 +18,26 @@ try {
   }
   & $script -DshHome $fixture -CheckOnly
   if (-not $?) { throw 'CheckOnly did not succeed' }
-  # Simulated failing package manager; never downloads anything.
-  Set-Content -LiteralPath (Join-Path $bin 'pnpm.cmd') -Value ("@echo off" + [Environment]::NewLine + "exit /b 9") -Encoding Ascii
+  # Simulate a package manager which first overwrites package files and the
+  # profile manifest, then fails both upgrade and dependency reinstall.
+  $oldClient = 'previous-client-content'
+  $oldUI = 'previous-ui-content'
+  Set-Content -LiteralPath (Join-Path $plugin 'client.js') -Value $oldClient -NoNewline
+  Set-Content -LiteralPath (Join-Path $plugin 'lib\redteam\ui.js') -Value $oldUI -NoNewline
+  $mock = @'
+@echo off
+if /I "%~1"=="add" (
+  echo changed>"%DSH_TEST_PLUGIN%\client.js"
+  echo corrupt>"%DSH_TEST_PLUGIN%\package.json"
+  del /q "%DSH_TEST_PLUGIN%\lib\redteam\ui.js"
+  echo mutated>"%DSH_TEST_PROFILE%\package.json"
+  exit /b 9
+)
+exit /b 7
+'@
+  Set-Content -LiteralPath (Join-Path $bin 'pnpm.cmd') -Value $mock -Encoding Ascii
+  $env:DSH_TEST_PLUGIN = $plugin
+  $env:DSH_TEST_PROFILE = $profile
   $env:PATH = $bin + [IO.Path]::PathSeparator + $env:PATH
   $failed = $false
   try { & $script -DshHome $fixture } catch { $failed = $true }
@@ -30,11 +48,22 @@ try {
   if ((Get-Content -LiteralPath (Join-Path $profile 'pnpm-lock.yaml') -Raw) -ne 'original-lock') {
     throw 'Original lockfile was not restored'
   }
-  Write-Host 'PASS: read-only verification and failed-install profile rollback'
+  if ((Get-Content -LiteralPath (Join-Path $plugin 'client.js') -Raw) -ne $oldClient) {
+    throw 'The full previous client.js was not restored'
+  }
+  if ((Get-Content -LiteralPath (Join-Path $plugin 'lib\redteam\ui.js') -Raw) -ne $oldUI) {
+    throw 'Deleted plugin UI was not restored from the snapshot'
+  }
+  if ((Get-Content -LiteralPath (Join-Path $plugin 'package.json') -Raw) -ne ('{"version":"' + $version + '"}')) {
+    throw 'Previous plugin manifest was not restored'
+  }
+  Write-Host 'PASS: read-only verification and failed-install full plugin/profile rollback'
   # Clear the expected non-zero native exit from our fake pnpm; otherwise the
   # GitHub pwsh wrapper treats a successful test as a failed job.
   $global:LASTEXITCODE = 0
 } finally {
   $env:PATH = $oldPath
+  Remove-Item Env:DSH_TEST_PLUGIN -ErrorAction SilentlyContinue
+  Remove-Item Env:DSH_TEST_PROFILE -ErrorAction SilentlyContinue
   Remove-Item -LiteralPath $fixture -Recurse -Force -ErrorAction SilentlyContinue
 }

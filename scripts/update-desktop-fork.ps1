@@ -60,6 +60,22 @@ foreach ($file in $files) {
   $had[$file] = Test-Path -LiteralPath $original -PathType Leaf
   if ($had[$file]) { Copy-Item -LiteralPath $original -Destination (Join-Path $backup $file) -Force }
 }
+# Snapshot the resolved plugin contents as well as profile metadata.
+# pnpm normally exposes the package through a junction/symlink into its virtual store;
+# restoring only package.json and the lockfile cannot recover a partially changed plugin.
+$pluginPresent = Test-Path -LiteralPath $plugin -PathType Container
+$pluginBackup = Join-Path $backup 'plugin-files'
+$originalHashes = @{}
+if ($pluginPresent) {
+  New-Item -Path $pluginBackup -ItemType Directory | Out-Null
+  Get-ChildItem -LiteralPath $plugin -Force | ForEach-Object {
+    Copy-Item -LiteralPath $_.FullName -Destination $pluginBackup -Recurse -Force
+  }
+  foreach ($file in (Get-ChildItem -LiteralPath $pluginBackup -Recurse -File -Force)) {
+    $relative = $file.FullName.Substring($pluginBackup.Length + 1)
+    $originalHashes[$relative] = (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash
+  }
+}
 $success = $false
 Push-Location $profileDir
 try {
@@ -78,22 +94,77 @@ try {
   Write-Host "PASS: installed dsh-purge $version in $profileDir"
 } catch {
   $problem = $_.Exception.Message
-  $rollbackStatus = 'restored profile manifest and lockfile'
+  $rollbackIssues = @()
   foreach ($file in $files) {
     $original = Join-Path $profileDir $file
-    if ($had[$file]) {
-      Copy-Item -LiteralPath (Join-Path $backup $file) -Destination $original -Force
-    } elseif (Test-Path -LiteralPath $original) {
-      Remove-Item -LiteralPath $original -Force
+    try {
+      if ($had[$file]) {
+        Copy-Item -LiteralPath (Join-Path $backup $file) -Destination $original -Force
+      } elseif (Test-Path -LiteralPath $original) {
+        Remove-Item -LiteralPath $original -Force
+      }
+    } catch { $rollbackIssues += "Could not restore ${file}: $($_.Exception.Message)" }
+  }
+
+  # Rebuild the original package-manager layout first, when the old lockfile exists.
+  if ($had['pnpm-lock.yaml']) {
+    try {
+      & pnpm install --frozen-lockfile --ignore-scripts
+      if ($LASTEXITCODE -ne 0) { $rollbackIssues += "pnpm dependency reinstall exited $LASTEXITCODE" }
+    } catch { $rollbackIssues += "pnpm dependency reinstall failed: $($_.Exception.Message)" }
+  }
+
+  # Verify the COMPLETE previous plugin contents, not just its declared version.
+  $pluginMatches = $pluginPresent -and (Test-Path -LiteralPath $plugin -PathType Container)
+  if ($pluginMatches) {
+    try {
+      $currentFiles = @(Get-ChildItem -LiteralPath $plugin -Recurse -File -Force)
+      if ($currentFiles.Count -ne $originalHashes.Count) { $pluginMatches = $false }
+      foreach ($entry in $originalHashes.GetEnumerator()) {
+        $installed = Join-Path $plugin $entry.Key
+        if (-not (Test-Path -LiteralPath $installed -PathType Leaf) -or
+          (Get-FileHash -LiteralPath $installed -Algorithm SHA256).Hash -ne $entry.Value) {
+          $pluginMatches = $false
+          break
+        }
+      }
+    } catch { $pluginMatches = $false }
+  }
+  if (-not $pluginMatches) {
+    try {
+      # Only remove the selected plugin path; remove reparse points as links,
+      # never recursively follow a pnpm junction into other dependencies.
+      if (Test-Path -LiteralPath $plugin) {
+        $existing = Get-Item -LiteralPath $plugin -Force
+        if ($existing.Attributes -band [IO.FileAttributes]::ReparsePoint) {
+          Remove-Item -LiteralPath $plugin -Force
+        } else {
+          Remove-Item -LiteralPath $plugin -Recurse -Force
+        }
+      }
+      if ($pluginPresent) {
+        Copy-Item -LiteralPath $pluginBackup -Destination $plugin -Recurse -Force
+      }
+      $pluginMatches = -not $pluginPresent -or (Test-Path -LiteralPath $plugin -PathType Container)
+      if ($pluginMatches -and $pluginPresent) {
+        foreach ($entry in $originalHashes.GetEnumerator()) {
+          $installed = Join-Path $plugin $entry.Key
+          if (-not (Test-Path -LiteralPath $installed -PathType Leaf) -or
+            (Get-FileHash -LiteralPath $installed -Algorithm SHA256).Hash -ne $entry.Value) {
+            $pluginMatches = $false
+            break
+          }
+        }
+      }
+    } catch {
+      $pluginMatches = $false
+      $rollbackIssues += "Could not restore previous plugin snapshot: $($_.Exception.Message)"
     }
   }
-  if ($had['pnpm-lock.yaml']) {
-    & pnpm install --frozen-lockfile --ignore-scripts
-    if ($LASTEXITCODE -ne 0) { $rollbackStatus += '; dependency reinstall failed (manual recovery needed)' }
-  } else {
-    $rollbackStatus += '; no original lockfile; dependencies were not automatically restored'
-  }
-  throw "Upgrade failed: $problem. Rollback: $rollbackStatus. Profile backup: $backup"
+  if (-not $pluginMatches) { $rollbackIssues += 'Previous plugin files were not fully restored' }
+  $status = if ($rollbackIssues.Count -eq 0) { 'previous profile and plugin files restored' }
+            else { 'incomplete: ' + ($rollbackIssues -join '; ') }
+  throw "Upgrade failed: $problem. Rollback: $status. Backup retained at: $backup"
 } finally {
   Pop-Location
   if ($success) { Remove-Item -LiteralPath $backup -Recurse -Force }

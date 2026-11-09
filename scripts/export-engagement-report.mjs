@@ -11,10 +11,11 @@ import { exportEngagementReport, parseReportExportArgs } from '../lib/redteam/re
 export async function main(argv = process.argv.slice(2), { env = process.env, cwd = process.cwd(), log = console.log, createStore } = {}) {
   const options = parseReportExportArgs(argv, env, cwd);
   if (options.help) {
-    log('用法：node scripts/export-engagement-report.mjs [--root <数据目录>] [--engagement <id>] [--out <输出父目录>]\n'
+    log('用法：node scripts/export-engagement-report.mjs [--root <数据目录>] [--engagement <id>] [--out <输出父目录>] [--shareable]\n'
       + '默认根目录：REDTEAM_HOME 或 DSH_HOME/redteam 或 ~/.dsh/redteam。\n'
       + '默认导出当前靶标；每次在 --out（默认当前目录）下新建独立交付包，不覆盖已有文件。\n'
-      + '交付包包含 Markdown、正文引用的 shots/ 文件和 SHA-256 manifest.json；请整体复制。');
+      + '普通模式包含 Markdown、引用的 shots/ 文件和 SHA-256 manifest.json。\n'
+      + '--shareable 是可选的初步脱敏副本：隐藏常见凭据/IP，省略截图，仍须人工检查后分享。');
     return null;
   }
   const result = await exportEngagementReport(options, { createStore });

@@ -129,6 +129,16 @@
 
 **报告是数据库记录的呈现，不是自动为结果背书。**
 
+### 命令行可选分享版（不改变原始导出）
+
+默认报告仍保留原文和证据。需要给外部人员查看时，可以在发布包根目录运行：
+
+```powershell
+node scripts/export-engagement-report.mjs --engagement <项目ID> --out .\reports --shareable
+```
+
+`--shareable` 会对**常见**凭据头、密码/token 字段和 IPv4 做基础掩码，隐藏目标标题与 manifest 中的 engagement ID，并省略原始截图文件。它不会修改工作区数据库或已有完整报告。**这不是完整匿名化保证**：其他个人信息、IPv6、域名、自由文本和嵌入链接仍可能包含敏感内容，分享前必须人工审阅。UI 中的「下载 Markdown」仍为原始报告，不会自动应用此选项。
+
 ## 十、Skill、SQLite 与 CLI 诊断
 
 这批次仓库新增了只读命令（需要运行**包含该功能的新版本代码**）：

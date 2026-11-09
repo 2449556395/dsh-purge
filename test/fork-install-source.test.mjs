@@ -5,7 +5,8 @@ import { purgePnpmBuildSpecs } from '../lib/profile-insert.js'
 
 const read = (file) => readFileSync(new URL(file, import.meta.url), 'utf8')
 const fork = 'wxcvm/dsh-purge'
-const tarball = `https://codeload.github.com/${fork}/tar.gz/refs/heads/master`
+const version = JSON.parse(read('../package.json')).version
+const tarball = `https://codeload.github.com/${fork}/tar.gz/refs/tags/v${version}`
 
 test('fork package metadata installs from its own maintained repository', () => {
   const pkg = JSON.parse(read('../package.json'))
@@ -13,7 +14,7 @@ test('fork package metadata installs from its own maintained repository', () => 
   assert.equal(pkg.homepage, `https://github.com/${fork}#readme`)
   assert.equal(pkg.bugs.url, `https://github.com/${fork}/issues`)
   assert.equal(pkg.dsh.install.tarball, tarball)
-  assert.equal(pkg.dsh.install.zip, `https://codeload.github.com/${fork}/zip/refs/heads/master`)
+  assert.equal(pkg.dsh.install.zip, `https://codeload.github.com/${fork}/zip/refs/tags/v${version}`)
   assert.equal(pkg.dsh.install.git, `https://github.com/${fork}.git`)
   assert.ok(purgePnpmBuildSpecs().includes(`dsh-purge@${tarball}`))
 })
@@ -23,7 +24,7 @@ test('built-in updater and profile fallback no longer point at the original repo
   const profile = read('../lib/profile-insert.js')
   assert.ok(updater.includes('const REPO = "wxcvm/dsh-purge";'))
   assert.ok(!updater.includes('YuJunZhiXue/dsh-purge'))
-  assert.ok(profile.includes(tarball))
+  assert.ok(profile.includes('pkg?.dsh?.install?.tarball'))
   assert.ok(!profile.includes('YuJunZhiXue/dsh-purge'))
 })
 
@@ -36,6 +37,7 @@ test('English and Chinese installation instructions select this fork without del
     assert.match(content, /git clone https:\/\/github\.com\/wxcvm\/dsh-purge\.git/)
     assert.match(content, /repo=wxcvm%2Fdsh-purge/)
     assert.ok(content.includes('version=' + version + '&repo='))
+    assert.ok(content.includes('downloadUrl=https%3A%2F%2Fcodeload.github.com%2Fwxcvm%2Fdsh-purge%2Ftar.gz%2Frefs%2Ftags%2Fv' + version))
     assert.ok(content.includes('YuJunZhiXue/dsh-purge'), 'original attribution retained')
   }
 })

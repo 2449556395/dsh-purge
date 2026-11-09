@@ -8,7 +8,11 @@ test('published zip has a checksum generated from exactly the uploaded file', ()
   assert.match(workflow, /gh release upload "\$tag" "\$zip" SHA256SUMS\.txt --clobber/)
 })
 
-test('fork only permits manual release dispatch on master', () => {
-  assert.match(workflow, /github\.repository == 'wxcvm\/dsh-purge' && github\.event_name == 'workflow_dispatch' && github\.ref == 'refs\/heads\/master'/)
-  assert.doesNotMatch(workflow, /startsWith\(github\.event\.head_commit\.message/)
+test('fork release only allows a single pinned push while publishing this version', () => {
+  const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'))
+  assert.match(workflow, /github\.repository == 'wxcvm\/dsh-purge'/)
+  assert.match(workflow, /github\.event_name == 'workflow_dispatch'/)
+  const trigger = workflow.match(/startsWith\(github\.event\.head_commit\.message, 'release: ([^']+)'\)/)
+  assert.ok(trigger, 'one-off release trigger must specify an exact version')
+  assert.equal(trigger[1], 'v' + pkg.version)
 })

@@ -6,8 +6,8 @@ param(
   [switch]$CheckOnly
 )
 $ErrorActionPreference = 'Stop'
-$version = '1.1.92-wxcvm.3'
-$source = 'https://codeload.github.com/wxcvm/dsh-purge/tar.gz/refs/tags/v1.1.92-wxcvm.3'
+$version = '1.1.92-wxcvm.4'
+$source = 'https://codeload.github.com/wxcvm/dsh-purge/tar.gz/refs/tags/v1.1.92-wxcvm.4'
 
 if (-not $DshHome) {
   $candidates = @()

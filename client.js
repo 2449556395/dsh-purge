@@ -128,6 +128,7 @@ window.__ModuleLoader__.load({ id: "dsh-purge", factory: (require) => {
 		const zh = {
 			nav: "规则设定",
 			"dock.clean": "清洗",
+			"help.clean": "清洗台详细操作指南（新手）",
 			"dock.drill": "作战台",
 			"dock.toggle": "dsh-purge",
 			"dock.newSession": "dsh-purge",
@@ -486,6 +487,7 @@ window.__ModuleLoader__.load({ id: "dsh-purge", factory: (require) => {
 		const en = {
 			nav: "Rules",
 			"dock.clean": "Clean",
+			"help.clean": "Cleaning console step-by-step guide",
 			"dock.drill": "Ops",
 			"dock.toggle": "dsh-purge",
 			"dock.newSession": "dsh-purge",
@@ -2221,6 +2223,12 @@ body[data-ds-dark-theme] .dshp-launch{background:color-mix(in srgb,var(--dsw-ali
 					h("div", { className: "dshp-metric" }, h("div", { className: "dshp-skel" }), h("div", { className: "dshp-skel", style: { width: "40%" } })),
 					h("div", { className: "dshp-metric" }, h("div", { className: "dshp-skel" }), h("div", { className: "dshp-skel", style: { width: "40%" } })),
 				),
+				h("div", { className: "dshp-row", style: { margin: "8px 0 10px" } },
+					h("a", {
+						href: "https://github.com/wxcvm/dsh-purge/blob/master/docs/CLEANING_GUIDE.zh-CN.md",
+						target: "_blank", rel: "noopener noreferrer",
+						style: { fontSize: 12.5 },
+					}, t("help.clean"))),
 				h(ApplyFlow, { progress: s && s.apply_progress, busy: patchBusy || uninstallBusy, t: t }),
 				h("div", { className: "dshp-bar", "aria-hidden": "true" }, h("i", { style: { transform: "scaleX(" + (pct / 100) + ")" } })),
 				h(PatchGroups, { state: s }),
@@ -6732,6 +6740,15 @@ body[data-ds-dark-theme] .rt-scope-testing,.dshp-dock[data-theme="dusk"] .rt-sco
       ]
       return h('div', { className: 'rt-pane' },
         h('div', { className: 'rt-card' },
+          h('h4', null, '新手详细操作指南'),
+          h('div', { style: { fontSize: 12.5, lineHeight: 1.7 } },
+            '从首次打开、创建项目、读懂每个页签，到环境、智能体状态和 Markdown 报告，按步骤讲解。'),
+          h('a', {
+            href: 'https://github.com/wxcvm/dsh-purge/blob/master/docs/OPERATIONS_GUIDE.zh-CN.md',
+            target: '_blank', rel: 'noopener noreferrer',
+            style: { fontSize: 12.5, display: 'inline-block', marginTop: 6 },
+          }, '打开《作战台详细操作指南》（中文）')),
+        h('div', { className: 'rt-card' },
           h('h4', null, '作战台五步'),
           h('ol', { style: { margin: '6px 0 0 18px', fontSize: 12.5, lineHeight: 1.9 } },
             steps.map((s, i) => h('li', { key: i }, s))),
@@ -8276,7 +8293,7 @@ body[data-ds-dark-theme] .rt-scope-testing,.dshp-dock[data-theme="dusk"] .rt-sco
           ['chain', '攻击链'], ['scores', '得分'],
         ] },
         { label: '资源', pages: [['sessions', '入口'], ['intel', '情报']] },
-        { label: '管理', pages: [['env', '环境'], ['agents', '智能体'], ['report', '报告']] },
+        { label: '管理', pages: [['guide', '指南'], ['env', '环境'], ['agents', '智能体'], ['report', '报告']] },
       ]
       const tabs = tabSections.flatMap((section) => section.pages)
       const full = isFullWindow()
@@ -8305,6 +8322,7 @@ body[data-ds-dark-theme] .rt-scope-testing,.dshp-dock[data-theme="dusk"] .rt-sco
       /* 全局页：没有靶标也能看（环境适配 / 智能体概览）。开源版下架知识库和技能库。 */
       else if (st.tab === 'env' || st.tab === 'knowledge' || st.tab === 'skills') body = h(EnvTab, { refreshKey: refreshKey })
       else if (st.tab === 'agents' || st.tab === 'prompts') body = h(AgentsTab, { engagement: eng, refreshKey: refreshKey })
+      else if (st.tab === 'guide') body = h(GuideTab, { engagement: eng })
       else if (!eng) {
         body = h('div', { className: 'rt-pane' },
           h('div', { className: 'rt-card' },
@@ -8322,7 +8340,6 @@ body[data-ds-dark-theme] .rt-scope-testing,.dshp-dock[data-theme="dusk"] .rt-sco
       } else if (st.tab === 'intel') body = h(IntelTab, { engagement: eng, refreshKey: refreshKey })
       else if (st.tab === 'overview') body = h(OverviewTab, { engagement: eng, snapshot: currentSnapshot, refreshKey: refreshKey, onGoto: (tab) => { markTabSeen(tab); setUI({ tab }); setRefreshKey((k) => k + 1) } })
       else if (st.tab === 'assets') body = h(AssetsTab, { engagement: eng, snapshot: currentSnapshot, refreshKey: refreshKey, onRefresh: refreshAll, onData: () => loadSnapshot(eng) })
-      else if (st.tab === 'guide') body = h(GuideTab, { engagement: eng })
       else if (st.tab === 'testing') body = h(AssetsTab, { engagement: eng, snapshot: currentSnapshot, refreshKey: refreshKey, onRefresh: refreshAll, onData: () => loadSnapshot(eng) })
       else if (st.tab === 'sessions') body = h(SessionTab, { engagement: eng, refreshKey: refreshKey })
       else if (st.tab === 'findings') body = h(FindingsTab, { engagement: eng, refreshKey: refreshKey })

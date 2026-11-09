@@ -29,6 +29,8 @@
   <a href="README.md">English</a> | <a href="README.zh-CN.md">中文</a>
 </p>
 
+> New Chinese beginner walk-throughs: [Cleaning console](docs/CLEANING_GUIDE.zh-CN.md) · [Operations console](docs/OPERATIONS_GUIDE.zh-CN.md).
+
 ## Original author and branch notes
 
 People have been selling this open-source work in the open. After that, the author was asked to come in and talk. No need to spell out the rest. Read between the lines.

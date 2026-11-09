@@ -64,5 +64,7 @@ jobs:
             gh "${args[@]}"
           fi
           test -s "$zip"
-          gh release upload "$tag" "$zip" --clobber
+          # Hash the exact bytes attached to the Release, not a separate archive.
+          sha256sum "$zip" > SHA256SUMS.txt
+          gh release upload "$tag" "$zip" SHA256SUMS.txt --clobber
           echo "published https://github.com/${GITHUB_REPOSITORY}/releases/tag/${tag}"

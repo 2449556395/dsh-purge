@@ -9057,11 +9057,15 @@ body[data-ds-dark-theme] .rt-scope-testing,.dshp-dock[data-theme="dusk"] .rt-sco
 			const [status, setStatus] = useState(null);
 			const [busy, setBusy] = useState(false);
 			const cacheRef = useRef({ at: 0, ready: null });
+			const refreshId = useRef(0);
 			const openRef = useRef(false);
 			openRef.current = open;
 
 			const refresh = useCallback(async () => {
+				const requestId = ++refreshId.current;
 				const r = await fetchEnvAdaptStatus();
+				/* 丢弃迟到的旧响应，避免覆盖新配置或重新弹出旧提示。 */
+				if (requestId !== refreshId.current) return null;
 				if (!r || r.ok !== true || typeof r.ready !== "boolean") return null;
 				cacheRef.current = { at: Date.now(), ready: r.ready, skipped: !!r.skipped };
 				setStatus(r);
@@ -9219,6 +9223,8 @@ body[data-ds-dark-theme] .rt-scope-testing,.dshp-dock[data-theme="dusk"] .rt-sco
 												setStatus({ ready: false, message: (r && r.error) || "保存“暂不配置”失败，请重试。" });
 												return;
 											}
+											/* 跳过配置成功后，不允许旧的状态轮询回写“未就绪”。 */
+											refreshId.current += 1;
 											cacheRef.current = { at: Date.now(), ready: true, skipped: true };
 											setStatus(r);
 											setOpen(false);

@@ -15,3 +15,10 @@ test('ready environment closes stale setup prompt; skip failures cannot claim su
   assert.match(client, /if \(!r \|\| r\.ok !== true \|\| r\.ready !== true\)/)
   assert.doesNotMatch(client, /\.catch\(\(\) => \{\s*setBusy\(false\);\s*cacheRef\.current = \{ at: Date\.now\(\), ready: true/)
 })
+
+test('late environment status responses cannot overwrite a newer result or a successful skip', () => {
+  assert.match(client, /const refreshId = useRef\(0\)/)
+  assert.match(client, /const requestId = \+\+refreshId\.current;/)
+  assert.match(client, /if \(requestId !== refreshId\.current\) return null;/)
+  assert.match(client, /refreshId\.current \+= 1;[\s\S]{0,160}cacheRef\.current = \{ at: Date\.now\(\), ready: true, skipped: true \};/)
+})

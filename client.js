@@ -7955,6 +7955,9 @@ body[data-ds-dark-theme] .rt-scope-testing,.dshp-dock[data-theme="dusk"] .rt-sco
       const current = info && info.current ? info.current : (info && info.plugin ? info.plugin.version : null)
       const latest = info && info.latest ? info.latest : null
       const hasNew = !!(info && info.updateAvailable)
+      const source = info && info.source
+      const sourceDifferent = !!(source && source.state === 'different')
+      const privateBuild = /-wxcvm(?:[.+-]|$)/i.test(String(current || ''))
       const blockers = (info && info.blockers) || []
       const notes = (info && info.notes) || []
       const mode = info && info.install ? info.install.mode : null
@@ -7964,14 +7967,15 @@ body[data-ds-dark-theme] .rt-scope-testing,.dshp-dock[data-theme="dusk"] .rt-sco
           className: 'rt-tag' + (hasNew ? ' rt-tag-warn' : ''),
           title: ('当前版本 ' + (current || '未知') + (latest ? '\n最新版本 ' + latest : '')
             + (mode === 'dev' ? '\n安装方式：开发态（源码软链）' : mode === 'package' ? '\n安装方式：包安装' : '')
-            + (info && info.check_error ? '\n检查失败：' + info.check_error : '')),
+            + (source && source.state === 'different' ? '\n已安装源码与 GitHub master 不一致' : source && source.state === 'match' ? '\n已安装源码与 GitHub master 一致' : '\n无法确认源码是否同步')
+            + (info && info.check_error ? '\n版本 Tag 检查失败：' + info.check_error : '')),
         }, 'v' + (current || '?')),
-        hasNew
+        hasNew || sourceDifferent
           ? h('button', {
               className: 'rt-btn rt-btn-primary', disabled: busy,
               onClick: () => { setOpen(true); setMsg(null) },
-              title: '发现新版本 ' + latest + '：点击查看并一键更新（会重启当前宿主）',
-            }, busy ? '检查中…' : '有新版本 v' + latest)
+              title: sourceDifferent ? '安装源码与 master 不一致；查看安装位置与差异' : '发现新版本 ' + latest,
+            }, busy ? '检查中…' : (sourceDifferent ? '源码与 master 不一致' : '有新版本 v' + latest))
           : h('button', {
               className: 'rt-btn', disabled: busy, onClick: () => check(false),
               title: '重新检查 npm 上的最新版本',
@@ -7981,7 +7985,20 @@ body[data-ds-dark-theme] .rt-scope-testing,.dshp-dock[data-theme="dusk"] .rt-sco
               h('div', { className: 'rt-modal-box', onClick: (e) => e.stopPropagation() },
                 h('h4', { style: { marginTop: 0 } }, '更新 RedTeam 模式'),
                 h('div', { className: 'rt-kv' }, h('b', null, '当前版本'), h('span', null, current || '未知')),
-                h('div', { className: 'rt-kv' }, h('b', null, '最新版本'), h('span', null, latest || '未知')),
+                h('div', { className: 'rt-kv' }, h('b', null, '最新版本 Tag'), h('span', null, latest || '未查到')),
+                h('div', { className: 'rt-kv' }, h('b', null, '源码状态'), h('span', null,
+                  !source ? '未检测' : source.state === 'match' ? '与 GitHub master 一致'
+                    : source.state === 'different' ? '与 GitHub master 不一致' : '无法确认')),
+                source && source.installedAt
+                  ? h('div', { className: 'rt-kv' }, h('b', null, '实际插件目录'), h('span', { className: 'rt-mono' }, source.installedAt))
+                  : null,
+                sourceDifferent
+                  ? h('div', { className: 'rt-kb-sub' },
+                      '内容不同：' + (source.different || []).join('、') + '。这只说明安装文件与 master 不一致，不代表可以直接覆盖本地自定义内容。')
+                  : null,
+                source && source.state === 'unknown'
+                  ? h('div', { className: 'rt-kb-sub' }, '源码校验不可用：' + (source.error || (source.unavailable || []).join('、') || '未知原因'))
+                  : null,
                 h('div', { className: 'rt-kv' }, h('b', null, '安装方式'),
                   h('span', null, mode === 'dev' ? '开发态（源码软链）' : mode === 'package' ? '包安装（' + ((info.install && info.install.packageManager) || 'npm') + '）' : '未知')),
                 info && info.install && info.install.dir
@@ -7996,8 +8013,9 @@ body[data-ds-dark-theme] .rt-scope-testing,.dshp-dock[data-theme="dusk"] .rt-sco
                   ? h('div', { className: 'rt-foot', style: { padding: '4px 0' } }, notes.map((n, i) => h('div', { key: 'n' + i }, n)))
                   : null,
                 h('div', { style: { fontSize: 12, color: 'var(--dsw-alias-label-secondary)', margin: '8px 0' } },
-                  '更新过程：安装新版本 → 自动重启当前宿主（官方 exe / 社区版 / dsh web；当前页面会断开，约 5–10 秒后自动刷新）。'
-                  + '重启前会检查有没有智能体在跑，有就拦住不动。'),
+                  privateBuild
+                    ? '当前为 wxcvm fork 构建。请先核对实际插件目录，再从你的仓库更新该安装副本并重启 DSH；此处不支持直接用上游 npm 包覆盖。'
+                    : '更新过程：安装新版本 → 自动重启当前宿主。重启前会检查有没有智能体在跑。'),
                 msg ? h('div', { className: msg.err ? 'rt-err' : 'rt-foot' }, msg.err || msg.ok) : null,
                 countdown > 0
                   ? h('div', { className: 'rt-foot' }, '宿主正在重启，' + countdown + ' 秒后自动刷新页面…')
@@ -8006,10 +8024,10 @@ body[data-ds-dark-theme] .rt-scope-testing,.dshp-dock[data-theme="dusk"] .rt-sco
                   h('button', { className: 'rt-btn', onClick: () => setOpen(false) }, '关闭'),
                   h('button', {
                     className: 'rt-btn rt-btn-primary',
-                    disabled: busy || blockers.length > 0 || mode === 'dev',
-                    title: mode === 'dev' ? '开发态安装请用仓库流程升级' : blockers.length ? '先解决上面的阻塞项' : '安装并重启',
+                    disabled: busy || blockers.length > 0 || mode === 'dev' || privateBuild || !hasNew,
+                    title: privateBuild ? '请更新实际安装的 fork 副本，不要用 npm 上游覆盖' : mode === 'dev' ? '开发态安装请用仓库流程升级' : blockers.length ? '先解决上面的阻塞项' : '安装并重启',
                     onClick: apply,
-                  }, busy ? '更新中…' : '一键更新并重启'))))
+                  }, busy ? '更新中…' : privateBuild ? '请按仓库流程更新' : '一键更新并重启'))))
           : null)
     }
 
@@ -8931,40 +8949,47 @@ body[data-ds-dark-theme] .rt-scope-testing,.dshp-dock[data-theme="dusk"] .rt-sco
 			const [confirmSkip, setConfirmSkip] = useState(false);
 			const [status, setStatus] = useState(null);
 			const [busy, setBusy] = useState(false);
-			const cacheRef = useRef({ at: 0, ready: false });
+			const cacheRef = useRef({ at: 0, ready: null });
 			const openRef = useRef(false);
 			openRef.current = open;
 
 			const refresh = useCallback(async () => {
 				const r = await fetchEnvAdaptStatus();
-				const ready = !!(r && r.ready);
-				cacheRef.current = { at: Date.now(), ready: ready, skipped: !!(r && r.skipped) };
+				if (!r || r.ok !== true || typeof r.ready !== "boolean") return null;
+				cacheRef.current = { at: Date.now(), ready: r.ready, skipped: !!r.skipped };
 				setStatus(r);
+				if (r.ready) {
+					setOpen(false);
+					setConfirmSkip(false);
+				}
 				return r;
 			}, []);
 
 			const blockAndOpen = useCallback(() => {
 				setConfirmSkip(false);
-				refresh();
-				/* 第一次：只走完整授权窗 → 授权后进环境适配页 */
-				if (!readDrillAuth()) {
-					setOpen(false);
-					requestDrillEnv();
-					return true;
-				}
-				/* 已授权过：只弹精简环境适配窗，不再自动拉开整块作战台 */
-				setOpen(true);
+				/* 先取最新结果再展示弹窗：旧的未就绪缓存不应盖过已保存的工具配置。 */
+				void refresh().then((r) => {
+					if (!r || r.ready) return;
+					if (!readDrillAuth()) {
+						setOpen(false);
+						requestDrillEnv();
+					} else {
+						setOpen(true);
+					}
+				});
 				return true;
 			}, [refresh]);
 
 			const mustBlockSubmit = useCallback(() => {
 				if (!isRedteamModeActive()) return false;
 				const cached = cacheRef.current;
-				/* cache 过期时触发异步刷新;本次调用按最后一次 cache 判断,未知保守 block */
+				/* 未知/过期不当作“环境缺失”：刷新并交由宿主自己的执行阶段确认。
+				 * 只有近期明确的 ready=false 才弹配置窗口。 */
 				if (!cached.at || Date.now() - cached.at > 2500) {
-					refresh().catch(() => {});
+					void refresh();
+					return false;
 				}
-				if (cached.ready) return false;
+				if (cached.ready !== false) return false;
 				blockAndOpen();
 				return true;
 			}, [blockAndOpen, refresh]);
@@ -9083,14 +9108,17 @@ body[data-ds-dark-theme] .rt-scope-testing,.dshp-dock[data-theme="dusk"] .rt-sco
 											body: JSON.stringify({ op: "platformEnvAdaptSkip", skip: true }),
 										}).then((r) => r.json()).then((r) => {
 											setBusy(false);
+											if (!r || r.ok !== true || r.ready !== true) {
+												setStatus({ ready: false, message: (r && r.error) || "保存“暂不配置”失败，请重试。" });
+												return;
+											}
 											cacheRef.current = { at: Date.now(), ready: true, skipped: true };
 											setStatus(r);
 											setOpen(false);
 											setConfirmSkip(false);
-										}).catch(() => {
+										}).catch((e) => {
 											setBusy(false);
-											cacheRef.current = { at: Date.now(), ready: true, skipped: true };
-											setOpen(false);
+											setStatus({ ready: false, message: "保存“暂不配置”失败：" + String((e && e.message) || e) });
 										});
 									},
 								}, t("envGate.skipYes")),

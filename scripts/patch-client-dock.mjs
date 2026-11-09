@@ -75,6 +75,7 @@ if (!client.includes(".dshp-dock{")) {
 	const cssExtra = `
 .dshp-dock{position:fixed;z-index:10050;display:flex;flex-direction:column;width:var(--dshp-dock-w,620px);height:var(--dshp-dock-h,72vh);min-width:380px;min-height:320px;max-width:calc(100vw - 16px);max-height:calc(100vh - 16px);box-sizing:border-box;background:color-mix(in srgb,var(--dsw-alias-bg-layer-1,var(--dshp-paper,#1c1c1c)) 52%,transparent);backdrop-filter:blur(22px) saturate(1.35);-webkit-backdrop-filter:blur(22px) saturate(1.35);border:1px solid color-mix(in srgb,var(--dsw-alias-border-l1,var(--dshp-line,#555)) 65%,transparent);border-radius:12px;box-shadow:0 18px 48px color-mix(in srgb,#000 30%,transparent),0 0 0 1px color-mix(in srgb,#fff 6%,transparent);pointer-events:auto;color:var(--dsw-alias-label-primary,var(--dshp-ink,#f2f2f2));overflow:hidden}
 .dshp-dock[data-open="0"]{display:none}
+.dshp-dock[data-maximized="1"]{left:8px!important;top:8px!important;width:calc(100vw - 16px)!important;height:calc(100vh - 16px)!important;max-width:none;max-height:none}
 .dshp-dock-head{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid color-mix(in srgb,var(--dsw-alias-border-l1,var(--dshp-line,#555)) 55%,transparent);background:transparent;cursor:grab;user-select:none;touch-action:none;color:var(--dsw-alias-label-primary,var(--dshp-ink,#f2f2f2))}
 .dshp-dock-head:active{cursor:grabbing}
 .dshp-dock-head b{font-size:14px;font-weight:600;color:inherit;text-shadow:0 1px 0 color-mix(in srgb,#000 18%,transparent)}
@@ -93,6 +94,9 @@ if (!client.includes(".dshp-dock{")) {
 .dshp-dock-body .dshp-mute,.dshp-dock-body .dshp-metric span,.dshp-dock-body .dshp-group-h em,.dshp-dock-body .dshp-count,.dshp-dock-body .dshp-rule-meta{color:var(--dshp-mute)}
 .dshp-dock-body .rt-dock{position:relative;inset:auto;width:100%!important;height:100%;flex:1;min-height:0;display:flex!important;box-shadow:none;border:0;transform:none!important;opacity:1!important;pointer-events:auto!important;background:transparent!important;color:var(--dsw-alias-label-primary,#f2f2f2)}
 .dshp-dock-body .rt-grip{display:none!important}
+.dshp-dock-body .rt-tabs{flex-wrap:nowrap;overflow-x:auto}
+.dshp-dock-body .rt-body,.dshp-dock-body .rt-main{overflow:auto!important}
+.dshp-dock-body .rt-split{min-width:0;min-height:0}
 .dshp-dock-body .rt-embedded>.rt-head,.dshp-dock-body .rt-tabs,.dshp-dock-body .rt-body,.dshp-dock-body .rt-foot,.dshp-dock-body .rt-card,.dshp-dock-body .rt-pane,.dshp-dock-body .rt-side,.dshp-dock-body .rt-main{background:transparent!important;color:inherit}
 .dshp-dock-body .rt-title,.dshp-dock-body .rt-tab.on,.dshp-dock-body .rt-btn{color:var(--dsw-alias-label-primary,#f2f2f2)}
 .dshp-dock-body .rt-tab{color:var(--dsw-alias-label-secondary,#c2bdb4)}
@@ -153,7 +157,7 @@ const dockBlock = `
 			} catch { /* ignore */ }
 		}
 
-		let dockBus = { open: false, tab: "clean", authOpen: false, pending: "tab", listeners: new Set() };
+		let dockBus = { open: false, tab: "clean", authOpen: false, pending: "tab", maximized: false, listeners: new Set() };
 		function getDock() { return dockBus; }
 		function setDock(patch) {
 			dockBus = Object.assign({}, dockBus, patch);
@@ -172,11 +176,8 @@ const dockBlock = `
 		function requestDrill(kind) {
 			const pending = kind || "tab";
 			if (readDrillAuth()) {
-				setDock({ open: true, tab: "drill", authOpen: false, pending: "tab" });
+				setDock({ open: true, tab: "drill", authOpen: false, pending: "tab", maximized: pending === "full" ? true : dockBus.maximized });
 				try { if (__dshPurgeDrill && __dshPurgeDrill.setUI) __dshPurgeDrill.setUI({ open: true }); } catch { /* ignore */ }
-				if (pending === "full") {
-					try { window.open(window.location.href.split("#")[0] + "#redteam-full", "_blank", "noopener"); } catch { /* ignore */ }
-				}
 				return;
 			}
 			setDock({ open: true, tab: "drill", authOpen: true, pending: pending });
@@ -260,11 +261,8 @@ const dockBlock = `
 								if (!ready) return;
 								writeDrillAuth(true);
 								const kind = props.pending || "tab";
-								setDock({ authOpen: false, open: true, tab: "drill", pending: "tab" });
+								setDock({ authOpen: false, open: true, tab: "drill", pending: "tab", maximized: kind === "full" ? true : dockBus.maximized });
 								try { if (__dshPurgeDrill && __dshPurgeDrill.setUI) __dshPurgeDrill.setUI({ open: true }); } catch { /* ignore */ }
-								if (kind === "full") {
-									try { window.open(window.location.href.split("#")[0] + "#redteam-full", "_blank", "noopener"); } catch { /* ignore */ }
-								}
 							},
 						}, okLabel),
 					),
@@ -303,13 +301,12 @@ const dockBlock = `
 					? h(__dshPurgeDrill.Panel, { embedded: true })
 					: h("div", { style: { padding: 16, color: "var(--dsw-alias-label-secondary)" } }, t("dock.unauthorized")));
 			return h(react.Fragment, null,
-				h("div", { className: "dshp-dock", "data-open": st.open ? "1" : "0" },
+				h("div", { className: "dshp-dock", "data-open": st.open ? "1" : "0", "data-maximized": st.maximized ? "1" : "0" },
 					h("div", { className: "dshp-dock-head" },
 						h("b", null, "dsh-purge"),
 						h("span", { style: { flex: 1 } }),
-						st.tab === "drill" && readDrillAuth()
-							? h("button", { type: "button", onClick: () => requestDrill("full") }, t("dock.full"))
-							: null,
+						h("button", { type: "button", onClick: () => setDock({ maximized: !st.maximized }) },
+							st.maximized ? "还原窗口" : "最大化"),
 						h("button", { type: "button", onClick: () => setDock({ open: false, authOpen: false, tab: "clean", pending: "tab" }) }, t("dock.close")),
 					),
 					h("div", { className: "dshp-dock-tabs", role: "tablist" },

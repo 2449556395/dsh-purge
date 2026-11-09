@@ -1005,6 +1005,10 @@ body[data-ds-dark-theme] .dshp-restart-card .dshp-btn-primary,body[data-ds-dark-
 
 .dshp-dock{position:fixed;top:12px;right:12px;z-index:10050;display:flex;flex-direction:column;width:var(--dshp-dock-w,620px);height:var(--dshp-dock-h,72vh);min-width:380px;min-height:320px;max-width:calc(100vw - 16px);max-height:calc(100vh - 16px);box-sizing:border-box;background:color-mix(in srgb,var(--dsw-alias-bg-layer-1,var(--dshp-paper,#fffcf7)) 52%,transparent);backdrop-filter:blur(22px) saturate(1.35);-webkit-backdrop-filter:blur(22px) saturate(1.35);border:1px solid color-mix(in srgb,var(--dsw-alias-border-l1,var(--dshp-line,#555)) 65%,transparent);border-radius:12px;box-shadow:0 18px 48px color-mix(in srgb,#000 30%,transparent),0 0 0 1px color-mix(in srgb,#fff 6%,transparent);pointer-events:auto;color:var(--dsw-alias-label-primary,var(--dshp-ink,#f2f2f2));overflow:visible}
 .dshp-dock[data-open="0"]{display:none}
+.dshp-dock[data-maximized="1"]{left:8px!important;top:8px!important;width:calc(100vw - 16px)!important;height:calc(100vh - 16px)!important;max-width:none;max-height:none}
+.dshp-dock[data-maximized="1"] .dshp-dock-resize,.dshp-dock[data-maximized="1"] .dshp-dock-resize-l,.dshp-dock[data-maximized="1"] .dshp-dock-resize-r,.dshp-dock[data-maximized="1"] .dshp-dock-resize-b{display:none}
+.dshp-guide-doc{box-sizing:border-box;width:100%;max-height:60vh;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font:12.5px/1.8 system-ui,-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;padding:14px;border:1px solid var(--dshp-line);border-radius:8px;background:var(--dshp-paper)}
+
 .dshp-launch{position:fixed;right:16px;bottom:16px;z-index:10040;appearance:none;display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 14px;border:1px solid color-mix(in srgb,var(--dsw-alias-brand-primary,#6dbf8c) 55%,transparent);border-radius:999px;background:color-mix(in srgb,var(--dsw-alias-bg-layer-1,#fffcf7) 46%,transparent);color:var(--dsw-alias-label-primary,#16140f);cursor:pointer;font:13px/1 inherit;box-shadow:0 8px 22px color-mix(in srgb,#000 28%,transparent);pointer-events:auto}
 .dshp-launch:hover{border-color:var(--dsw-alias-brand-primary,#6dbf8c);background:color-mix(in srgb,var(--dsw-alias-brand-primary,#6dbf8c) 18%,transparent)}
 .dshp-launch[data-open="1"],.dshp-launch[data-hide="1"]{display:none}
@@ -1032,12 +1036,12 @@ body[data-ds-dark-theme] .dshp-restart-card .dshp-btn-primary,body[data-ds-dark-
 .dshp-dock-body .rt-dock{position:relative;inset:auto;width:100%!important;height:100%;max-width:none!important;flex:1;min-height:0;min-width:0;display:flex!important;flex-direction:column;box-shadow:none;border:0;transform:none!important;opacity:1!important;pointer-events:auto!important;background:transparent!important}
 .dshp-dock-body .rt-grip{display:none!important}
 .dshp-dock-body .rt-embedded>.rt-head,.dshp-dock-body .rt-tabs,.dshp-dock-body .rt-foot{flex:none}
-.dshp-dock-body .rt-body{flex:1;min-height:0;overflow:hidden!important;background:transparent!important}
-.dshp-dock-body .rt-main{min-height:0;flex:1;overflow:hidden}
+.dshp-dock-body .rt-body{flex:1;min-height:0;min-width:0;overflow:auto!important;overscroll-behavior:contain;background:transparent!important}
+.dshp-dock-body .rt-main{min-height:0;flex:1;overflow:auto}
 .dshp-dock-body .rt-pane{min-height:0;overflow:auto!important}
 .dshp-dock-body .rt-embedded>.rt-head{padding:8px 12px}
 .dshp-dock-body .rt-embedded>.rt-head .rt-title{font-size:14px;letter-spacing:0}
-.dshp-dock-body .rt-tabs{gap:8px;padding:0 12px;flex-wrap:wrap}
+.dshp-dock-body .rt-tabs{gap:8px;padding:0 12px;flex-wrap:nowrap;overflow-x:auto}
 .dshp-dock-body .rt-tab{border-radius:0;border-bottom:2px solid transparent;margin-bottom:-1px;padding:8px 12px;background:transparent;font-size:14px}
 .dshp-dock-body .rt-tab.on{border-bottom-color:var(--dsw-alias-brand-primary,#6d8f78);background:transparent;font-weight:650}
 .dshp-dock-body .rt-row:hover,.dshp-dock-body .rt-item:hover,.dshp-dock-body .rt-item.on,.dshp-dock-body .rt-seg:hover,.dshp-dock-body .rt-seg.on,.dshp-dock-body .rt-vrow:hover,.dshp-dock-body .rt-score-row:hover{background:var(--rt-surf-2)!important}
@@ -1048,9 +1052,9 @@ body:not([data-ds-dark-theme]) .dshp-auth-ops button{border-color:var(--dsw-alia
 body:not([data-ds-dark-theme]) .dshp-auth-ops button.primary{background:var(--dsw-alias-brand-primary,#3f6b52);border-color:var(--dsw-alias-brand-primary,#3f6b52);color:#fff}
 .dshp-dock-resize,.dshp-dock-resize-l,.dshp-dock-resize-r,.dshp-dock-resize-b{position:absolute;z-index:60;pointer-events:auto;touch-action:none}
 .dshp-dock-resize{right:0;bottom:0;width:22px;height:22px;cursor:nwse-resize;background:linear-gradient(135deg,transparent 46%,color-mix(in srgb,var(--dsw-alias-brand-primary,#6dbf8c) 75%,transparent) 46%);border-radius:0 0 12px 0;opacity:.95}
-.dshp-dock-resize-l{left:-2px;top:0;bottom:0;width:10px;cursor:ew-resize;background:color-mix(in srgb,var(--dsw-alias-brand-primary,#6dbf8c) 18%,transparent)}
+.dshp-dock-resize-l{left:0;top:32px;bottom:20px;width:5px;cursor:ew-resize;background:color-mix(in srgb,var(--dsw-alias-brand-primary,#6dbf8c) 18%,transparent)}
 .dshp-dock-resize-l:hover,.dshp-dock-resize-r:hover{background:color-mix(in srgb,var(--dsw-alias-brand-primary,#6dbf8c) 42%,transparent)}
-.dshp-dock-resize-r{right:-2px;top:0;bottom:22px;width:10px;cursor:ew-resize;background:transparent}
+.dshp-dock-resize-r{right:0;top:32px;bottom:22px;width:5px;cursor:ew-resize;background:transparent}
 .dshp-dock-resize-b{left:10px;right:22px;bottom:-2px;height:10px;cursor:ns-resize;background:transparent}
 .dshp-dock-resize-b:hover{background:color-mix(in srgb,var(--dsw-alias-brand-primary,#6dbf8c) 35%,transparent)}
 .dshp-auth-mask{position:fixed;inset:0;z-index:10100;background:rgba(0,0,0,.62);display:flex;align-items:center;justify-content:center;padding:20px;pointer-events:auto}
@@ -1621,6 +1625,9 @@ body[data-ds-dark-theme] .dshp-launch{background:color-mix(in srgb,var(--dsw-ali
 			const [askUninstall, setAskUninstall] = useState(false);
 			const [uninstallBusy, setUninstallBusy] = useState(false);
 			const [notice, setNotice] = useState({ kind: "idle", text: "" });
+			const [cleanGuideOpen, setCleanGuideOpen] = useState(false);
+			const [cleanGuideText, setCleanGuideText] = useState("");
+			const [cleanGuideError, setCleanGuideError] = useState("");
 			const [updateNotice, setUpdateNotice] = useState({ kind: "idle", text: "" });
 			const [updateInfo, setUpdateInfo] = useState(null);
 			const [channel, setChannel] = useState("stable");
@@ -1927,7 +1934,12 @@ body[data-ds-dark-theme] .dshp-launch{background:color-mix(in srgb,var(--dsw-ali
 										}),
 									);
 								}
-								if (parts.length === 0) parts.push(tr("restart.incomplete.flash", { entry: "unknown" }));
+								if (d.host_written === false) parts.push("补丁未确认写入当前宿主");
+								if (d.hook_restore_failed === true) parts.push("Hook 恢复失败");
+								if (parts.length === 0) parts.push("部分补丁未满足完成条件，查看上方补丁状态");
+								setState((prev) => Object.assign({}, prev || {}, {
+									apply_progress: { active: false, kind: "apply", stage: "done", error: parts.join("；") },
+								}));
 								setNotice({
 									kind: "error",
 									text: tr("restart.incomplete", { detail: parts.join("；") }),
@@ -1940,6 +1952,9 @@ body[data-ds-dark-theme] .dshp-launch{background:color-mix(in srgb,var(--dsw-ali
 								return;
 							}
 							if (action === "apply") {
+								setState((prev) => Object.assign({}, prev || {}, {
+									apply_progress: { active: false, kind: "apply", stage: "done", error: "" },
+								}));
 								setNotice({ kind: "ok", text: tr("ok.done") });
 								loadAll();
 								suppressRestartAsk.current = false;
@@ -2224,11 +2239,23 @@ body[data-ds-dark-theme] .dshp-launch{background:color-mix(in srgb,var(--dsw-ali
 					h("div", { className: "dshp-metric" }, h("div", { className: "dshp-skel" }), h("div", { className: "dshp-skel", style: { width: "40%" } })),
 				),
 				h("div", { className: "dshp-row", style: { margin: "8px 0 10px" } },
-					h("a", {
-						href: "https://github.com/wxcvm/dsh-purge/blob/master/docs/CLEANING_GUIDE.zh-CN.md",
-						target: "_blank", rel: "noopener noreferrer",
-						style: { fontSize: 12.5 },
-					}, t("help.clean"))),
+					h("button", { type: "button", className: "dshp-btn",
+						onClick: () => {
+							setCleanGuideOpen((v) => !v);
+							if (cleanGuideText) return;
+							apiJson("/redteam/api", {
+								method: "POST", headers: { "content-type": "application/json" },
+								body: JSON.stringify({ op: "guideDoc", doc: "cleaning" }),
+							}).then((d) => {
+								if (!d || d.ok === false) throw new Error((d && d.error) || "指南读取失败");
+								setCleanGuideText(d.content || "");
+								setCleanGuideError("");
+							}).catch((e) => setCleanGuideError(String((e && e.message) || e)));
+						},
+					}, cleanGuideOpen ? "收起清洗台指南" : "在当前窗口阅读清洗台指南")),
+				cleanGuideOpen ? h("div", null,
+					cleanGuideError ? h("div", { className: "dshp-notice is-error" }, cleanGuideError) : null,
+					h("pre", { className: "dshp-guide-doc" }, cleanGuideText || (cleanGuideError ? "" : "正在读取本地指南…"))) : null,
 				h(ApplyFlow, { progress: s && s.apply_progress, busy: patchBusy || uninstallBusy, t: t }),
 				h("div", { className: "dshp-bar", "aria-hidden": "true" }, h("i", { style: { transform: "scaleX(" + (pct / 100) + ")" } })),
 				h(PatchGroups, { state: s }),
@@ -4422,6 +4449,8 @@ body[data-ds-dark-theme] .rt-scope-testing,.dshp-dock[data-theme="dusk"] .rt-sco
 .rt-ops-step:hover{border-color:var(--rt-accent);background:var(--rt-fill)}
 .rt-ops-step-num{display:flex;align-items:center;justify-content:center;flex:none;width:27px;height:27px;border-radius:8px;background:var(--rt-fill);font-size:11px;font-weight:700;color:var(--rt-accent)}
 .rt-ops-step-label{font-size:11.5px;line-height:1.35;overflow-wrap:anywhere}
+.rt-guide-doc{box-sizing:border-box;max-height:60vh;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font:12.5px/1.8 system-ui,-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;padding:14px;border:1px solid var(--dsw-alias-border-l1);border-radius:8px;background:var(--dsw-alias-bg-layer-2)}
+.rt-pagination{flex:none;display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 12px;border-top:1px solid var(--dsw-alias-border-l1);font-size:12px;background:var(--dsw-alias-bg-layer-1)}
 .rt-intel-results{min-width:0;max-width:100%;overflow-x:auto}
 .rt-intel-results .rt-table{width:100%;min-width:620px}
 @media(max-width:880px){.rt-ops-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.rt-ops-grid{grid-template-columns:minmax(0,1fr)}.rt-ops-stages{grid-template-columns:repeat(3,minmax(0,1fr))}}
@@ -4431,6 +4460,20 @@ body[data-ds-dark-theme] .rt-scope-testing,.dshp-dock[data-theme="dusk"] .rt-sco
     /** 是否在「全面浏览」独立窗口里（URL hash 标记，复用同一套界面代码）。 */
     const isFullWindow = () => {
       try { return String(window.location.hash || '') === '#redteam-full' } catch { return false }
+    }
+
+    const pageControls = (total, page, size, setPage) => {
+      const count = Math.max(0, Number(total) || 0)
+      const pages = Math.max(1, Math.ceil(count / size))
+      const current = Math.min(page, pages - 1)
+      return h('div', { className: 'rt-pagination' },
+        h('span', null, count ? (current * size + 1) + '–' + Math.min(count, (current + 1) * size) + ' / ' + count + ' 条' : '共 0 条'),
+        h('div', { className: 'rt-spacer' }),
+        h('button', { type: 'button', className: 'rt-btn', disabled: current === 0,
+          onClick: () => setPage((p) => Math.max(0, p - 1)) }, '上一页'),
+        h('span', null, '第 ' + (current + 1) + ' / ' + pages + ' 页'),
+        h('button', { type: 'button', className: 'rt-btn', disabled: current >= pages - 1,
+          onClick: () => setPage((p) => Math.min(pages - 1, p + 1)) }, '下一页'))
     }
 
     const api = (req) => fetch('/redteam/api', {
@@ -4657,6 +4700,10 @@ body[data-ds-dark-theme] .rt-scope-testing,.dshp-dock[data-theme="dusk"] .rt-sco
       const [sort, setSort] = React.useState('priority')
       const [showAll, setShowAll] = React.useState(null)
       const [state, setState] = React.useState({ loading: false, error: null, total: 0, items: [] })
+      const [page, setPage] = React.useState(0)
+      const pageSize = 100
+      React.useEffect(() => { setPage(0); setOpenId(null); setDetail(null) },
+        [eng, cidr, qApplied, service, port, prov, testStatus, priority, scope, assetState, sort])
       const [domains, setDomains] = React.useState(null)
       const [web, setWeb] = React.useState(null)
       const [openId, setOpenId] = React.useState(null)
@@ -4675,7 +4722,7 @@ body[data-ds-dark-theme] .rt-scope-testing,.dshp-dock[data-theme="dusk"] .rt-sco
           service: service || undefined, port: port || undefined,
           provenance: prov || undefined, test_status: testStatus || undefined,
           priority: priority || undefined, scope: scope || undefined,
-          state: assetState || undefined, sort: sort, limit: 400,
+          state: assetState || undefined, sort: sort, limit: pageSize, offset: page * pageSize,
         }).then((r) => {
           if (my !== seq.current) return
           if (!r || r.ok === false) {
@@ -4688,7 +4735,7 @@ body[data-ds-dark-theme] .rt-scope-testing,.dshp-dock[data-theme="dusk"] .rt-sco
         }, (e) => {
           if (my === seq.current) setState({ loading: false, error: String((e && e.message) || e), total: 0, items: [] })
         })
-      }, [eng, cidr, qApplied, service, port, prov, testStatus, priority, scope, assetState, sort, refreshKey])
+      }, [eng, cidr, qApplied, service, port, prov, testStatus, priority, scope, assetState, sort, page, refreshKey])
 
       React.useEffect(() => {
         if (!eng || view !== 'domain') return
@@ -5011,7 +5058,8 @@ body[data-ds-dark-theme] .rt-scope-testing,.dshp-dock[data-theme="dusk"] .rt-sco
         h('div', { className: 'rt-main' }, view === 'testing' ? null : toolbar,
           conclusion,
           state.error ? h('div', { className: 'rt-err' }, state.error) : null,
-          pane))
+          pane,
+          view === 'list' ? pageControls(state.total, page, pageSize, setPage) : null))
     }
 
     /* ---------------------------------------------------------- 资产发现时间线 */
@@ -5444,6 +5492,9 @@ body[data-ds-dark-theme] .rt-scope-testing,.dshp-dock[data-theme="dusk"] .rt-sco
       const [q, setQ] = React.useState('')
       const [qApplied, setQApplied] = React.useState('')
       const [state, setState] = React.useState({ loading: false, error: null, total: 0, items: [], stats: null })
+      const [page, setPage] = React.useState(0)
+      const pageSize = 100
+      React.useEffect(() => { setPage(0); setOpenId(null) }, [eng, sev, status, qApplied])
       const [creds, setCreds] = React.useState([])
       const [accesses, setAccesses] = React.useState([])
       const [files, setFiles] = React.useState([])
@@ -5459,7 +5510,7 @@ body[data-ds-dark-theme] .rt-scope-testing,.dshp-dock[data-theme="dusk"] .rt-sco
         if (!eng) return
         api({
           op: 'vulns', engagement: eng, severity: sev || undefined,
-          status: status || undefined, q: qApplied || undefined, limit: 200,
+          status: status || undefined, q: qApplied || undefined, limit: pageSize, offset: page * pageSize,
         }).then((r) => {
           if (!r || r.ok === false) {
             setState({ loading: false, error: (r && r.error) || '查询失败', total: 0, items: [], stats: null })
@@ -5471,7 +5522,7 @@ body[data-ds-dark-theme] .rt-scope-testing,.dshp-dock[data-theme="dusk"] .rt-sco
         api({ op: 'access', engagement: eng }).then((r) => setAccesses((r && r.items) || []), () => {})
         api({ op: 'attackFiles', engagement: eng }).then((r) => setFiles((r && r.items) || []), () => {})
       }
-      React.useEffect(load, [eng, sev, status, qApplied, refreshKey])
+      React.useEffect(load, [eng, sev, status, qApplied, page, refreshKey])
 
       const setVulnStatus = (id, next) => {
         setMsg(null)
@@ -5709,7 +5760,8 @@ body[data-ds-dark-theme] .rt-scope-testing,.dshp-dock[data-theme="dusk"] .rt-sco
           : subTab === 'access'
             ? h('div', { className: 'rt-body', style: { overflow: 'auto' } }, accessSection)
             : h('div', { className: 'rt-table' }, grouped ? null : head, rows,
-                !state.loading && !state.items.length && !state.error ? h('div', { className: 'rt-empty' }, '暂无漏洞记录') : null))
+                !state.loading && !state.items.length && !state.error ? h('div', { className: 'rt-empty' }, '暂无漏洞记录') : null),
+        subTab === 'vulns' ? pageControls(state.total, page, pageSize, setPage) : null)
     }
 
     /* ---------------------------------------------------------- 攻击链 */
@@ -6711,6 +6763,20 @@ body[data-ds-dark-theme] .rt-scope-testing,.dshp-dock[data-theme="dusk"] .rt-sco
       const [pf, setPf] = React.useState(null)
       const [busy, setBusy] = React.useState(false)
       const [msg, setMsg] = React.useState('')
+      const [guideOpen, setGuideOpen] = React.useState(false)
+      const [guideText, setGuideText] = React.useState('')
+      const [guideError, setGuideError] = React.useState('')
+      React.useEffect(() => {
+        if (!guideOpen || guideText) return
+        let cancelled = false
+        api({ op: 'guideDoc', doc: 'operations' })
+          .then((r) => {
+            if (cancelled) return
+            if (!r || r.ok === false) setGuideError((r && r.error) || '指南读取失败')
+            else { setGuideText(r.content || ''); setGuideError('') }
+          }, (e) => { if (!cancelled) setGuideError(String((e && e.message) || e)) })
+        return () => { cancelled = true }
+      }, [guideOpen, guideText])
       const runSkillCheck = () => {
         if (busy) return
         setBusy(true); setMsg('')
@@ -6752,11 +6818,12 @@ body[data-ds-dark-theme] .rt-scope-testing,.dshp-dock[data-theme="dusk"] .rt-sco
           h('h4', null, '新手详细操作指南'),
           h('div', { style: { fontSize: 12.5, lineHeight: 1.7 } },
             '从首次打开、创建项目、读懂每个页签，到环境、智能体状态和 Markdown 报告，按步骤讲解。'),
-          h('a', {
-            href: 'https://github.com/wxcvm/dsh-purge/blob/master/docs/OPERATIONS_GUIDE.zh-CN.md',
-            target: '_blank', rel: 'noopener noreferrer',
-            style: { fontSize: 12.5, display: 'inline-block', marginTop: 6 },
-          }, '打开《作战台详细操作指南》（中文）')),
+          h('button', { type: 'button', className: 'rt-btn', style: { marginTop: 6 },
+            onClick: () => setGuideOpen((v) => !v) },
+            guideOpen ? '收起详细指南' : '在当前窗口阅读完整中文指南'),
+          guideOpen ? h('div', { style: { marginTop: 8 } },
+            guideError ? h('div', { className: 'rt-err' }, guideError) : null,
+            h('pre', { className: 'rt-guide-doc' }, guideText || (guideError ? '' : '正在读取本地指南…'))) : null),
         h('div', { className: 'rt-card' },
           h('h4', null, '作战台五步'),
           h('ol', { style: { margin: '6px 0 0 18px', fontSize: 12.5, lineHeight: 1.9 } },
@@ -8556,7 +8623,7 @@ body[data-ds-dark-theme] .rt-scope-testing,.dshp-dock[data-theme="dusk"] .rt-sco
 			if (dockBus && dockBus.authOpen) setDock({ authOpen: false });
 		}
 
-		let dockBus = { open: false, tab: "clean", authOpen: false, pending: "tab", listeners: new Set() };
+		let dockBus = { open: false, tab: "clean", authOpen: false, pending: "tab", maximized: false, listeners: new Set() };
 		function getDock() { return dockBus; }
 		function setDock(patch) {
 			dockBus = Object.assign({}, dockBus, patch);
@@ -8582,12 +8649,10 @@ body[data-ds-dark-theme] .rt-scope-testing,.dshp-dock[data-theme="dusk"] .rt-sco
 				} catch { /* ignore */ }
 			};
 			if (readDrillAuth()) {
-				setDock({ open: true, tab: "drill", authOpen: false, pending: "tab" });
+				setDock({ open: true, tab: "drill", authOpen: false, pending: "tab", maximized: pending === "full" ? true : dockBus.maximized });
 				try { if (__dshPurgeDrill && __dshPurgeDrill.setUI) __dshPurgeDrill.setUI({ open: true }); } catch { /* ignore */ }
 				if (pending === "env") openEnv();
-				if (pending === "full") {
-					try { window.open(window.location.href.split("#")[0] + "#redteam-full", "_blank", "noopener"); } catch { /* ignore */ }
-				}
+				
 				return;
 			}
 			/* 未授权：直接切到作战台页签并弹出授权窗（不再停在清洗页，避免像「没触发」） */
@@ -8771,14 +8836,12 @@ body[data-ds-dark-theme] .rt-scope-testing,.dshp-dock[data-theme="dusk"] .rt-sco
 								if (!ready) return;
 								writeDrillAuth(true);
 								const kind = props.pending || "tab";
-								setDock({ authOpen: false, open: true, tab: "drill", pending: "tab" });
+								setDock({ authOpen: false, open: true, tab: "drill", pending: "tab", maximized: kind === "full" ? true : dockBus.maximized });
 								try { if (__dshPurgeDrill && __dshPurgeDrill.setUI) __dshPurgeDrill.setUI({ open: true }); } catch { /* ignore */ }
 								if (kind === "env") {
 									try { if (__dshPurgeDrill && __dshPurgeDrill.setUI) __dshPurgeDrill.setUI({ open: true, tab: "env" }); } catch { /* ignore */ }
 								}
-								if (kind === "full") {
-									try { window.open(window.location.href.split("#")[0] + "#redteam-full", "_blank", "noopener"); } catch { /* ignore */ }
-								}
+								
 							},
 						}, okLabel),
 					),
@@ -9197,7 +9260,7 @@ body[data-ds-dark-theme] .rt-scope-testing,.dshp-dock[data-theme="dusk"] .rt-sco
 				setDock({ tab: "clean", authOpen: false, pending: "tab" });
 			};
 			const startDrag = (e) => {
-				if (e.button !== 0) return;
+				if (st.maximized || e.button !== 0) return;
 				if (e.target && e.target.closest && e.target.closest("button,a,input,select,textarea,label")) return;
 				e.preventDefault();
 				const sx = e.clientX;
@@ -9283,6 +9346,7 @@ body[data-ds-dark-theme] .rt-scope-testing,.dshp-dock[data-theme="dusk"] .rt-sco
 				className: "dshp-dock",
 				"data-theme": dockTheme === "white" ? "white" : "dusk",
 				"data-open": st.open ? "1" : "0",
+				"data-maximized": st.maximized ? "1" : "0",
 				style: {
 					left: geom.x + "px",
 					top: geom.y + "px",
@@ -9295,9 +9359,8 @@ body[data-ds-dark-theme] .rt-scope-testing,.dshp-dock[data-theme="dusk"] .rt-sco
 				h("div", { className: "dshp-dock-head", onMouseDown: startDrag, title: "Drag to move the panel" },
 					h("b", null, "dsh-purge"),
 					h("span", { style: { flex: 1 } }),
-					st.tab === "drill" && readDrillAuth()
-						? h("button", { type: "button", onClick: () => requestDrill("full") }, t("dock.full"))
-						: null,
+					h("button", { type: "button", title: "在当前窗口最大化或还原",
+							onClick: () => setDock({ maximized: !st.maximized }) }, st.maximized ? "还原窗口" : "最大化"),
 					h("button", { type: "button", onClick: () => setDock({ open: false, authOpen: false, tab: "clean", pending: "tab" }) }, t("dock.close")),
 				),
 				h("div", { className: "dshp-dock-tabs", role: "tablist" },

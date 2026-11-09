@@ -26,3 +26,16 @@ test('built-in updater and profile fallback no longer point at the original repo
   assert.ok(profile.includes(tarball))
   assert.ok(!profile.includes('YuJunZhiXue/dsh-purge'))
 })
+
+test('English and Chinese installation instructions select this fork without deleting upstream attribution', () => {
+  const version = JSON.parse(read('../package.json')).version
+  for (const name of ['README.md', 'README.zh-CN.md']) {
+    const content = read('../' + name)
+    assert.match(content, /https:\/\/codeload\.github\.com\/wxcvm\/dsh-purge\/tar\.gz\/refs\/heads\/master/)
+    assert.doesNotMatch(content, /https:\/\/codeload\.github\.com\/YuJunZhiXue\/dsh-purge\//)
+    assert.match(content, /git clone https:\/\/github\.com\/wxcvm\/dsh-purge\.git/)
+    assert.match(content, /repo=wxcvm%2Fdsh-purge/)
+    assert.ok(content.includes('version=' + version + '&repo='))
+    assert.ok(content.includes('YuJunZhiXue/dsh-purge'), 'original attribution retained')
+  }
+})

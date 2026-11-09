@@ -16,11 +16,7 @@ concurrency:
 jobs:
   release:
     # 上游保持 master 自动发布；wxcvm fork 只允许在 master 上手动触发，避免每次合并发布。
-    if: >-
-      github.repository == 'YuJunZhiXue/dsh-purge' ||
-      (github.repository == 'wxcvm/dsh-purge' && github.ref == 'refs/heads/master' &&
-       (github.event_name == 'workflow_dispatch' ||
-        (github.event_name == 'push' && startsWith(github.event.head_commit.message, 'release: v1.1.92-wxcvm.3'))))
+    if: github.repository == 'YuJunZhiXue/dsh-purge' || (github.repository == 'wxcvm/dsh-purge' && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/master')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

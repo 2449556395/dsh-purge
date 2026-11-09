@@ -1,24 +1,19 @@
-# 1.1.92-wxcvm.2
+# 1.1.92-wxcvm.3
 
 ## 中文
 
-- **面向 wxcvm fork 的维护预览版**：和原作者版本区分，`package.json` 升至 `1.1.92-wxcvm.2`，便于识别升级前后的实际安装包。
-- **作战台入口与交互**：恢复「技能库」入口及真实路由，完善内嵌指南、页签交互、列表与错误反馈。
-- **环境与运行时诊断**：解决工具已检测到却弹「环境没配好」的状态竞争；可在「管理 → 指南」检查实际插件目录文件和 GitHub master 的差异，避免只看 Git 工作区或版本号误判。
-- **数据保留**：靶标从当前名册移除时完整归档到本地 `redteam/archive/`，不再直接物理删除资产库、证据与报告。
-- **通道状态**：把代理是否可用与目标侧边界证据分开呈现，不以特定代理或 WebShell 名称判定连接必然失败。
-- **宿主兼容**：Windows / Ubuntu 兼容矩阵包含 DSH `0.2.2-rc.1`；相关 PR 均通过 11/11 CI。
-- **安装源修正**：中英文 README 的安装、手动克隆、下载包与桌面深链指向本 fork；继续保留原作者署名和许可证信息。
-- **验收边界**：CI 不是实际 DSH Desktop 的加载证明；请更新真正运行的插件副本、完全重启，再核对技能库、归档按钮及源码诊断。
-- **发布方式**：fork 仅在 `master` 手动触发 Release workflow；普通合并不会自动创建 Release。
+- **归档恢复闭环**：新增「管理 → 指南 → 已归档靶标」，可以查看/恢复之前归档的工作区；保留原库、报告和证据，拒绝覆盖活动名册里的同名项目。
+- **Windows Desktop 升级**：附带 `scripts/update-desktop-fork.ps1`，只针对选定的 DSH profile 安装指定 fork 版本，提供只读校验与失败后配置、锁文件恢复，并尝试重新安装旧依赖。
+- **兼容测试**：现有 Windows 矩阵增加脚本只读与模拟失败恢复验证，不增加矩阵机器数量。
+- **发行完整性**：Release workflow 现在把 SHA256SUMS.txt 与 ZIP 同时上传，可对下载的 ZIP 做完整性校验。
+- **此前修复延续**：技能库入口、运行中源码诊断、环境状态竞态、通道真实状态展示、靶标归档保留等均继续包含。
+- **验收边界**：Windows 自动化检查不能替代用户实际 Desktop 的安装与图形界面验收；本 fork 普通合并依旧不会自动发布。
 
 ## English
 
-- **Maintained fork preview** with a distinct `1.1.92-wxcvm.2` version.
-- Restored Skill catalog navigation, corrected routing, and improved embedded UI diagnostics.
-- Fixed false environment-setup prompts; added a read-only installed-source comparison.
-- Engagement removal now archives the complete workspace instead of permanently deleting it.
-- Proxy connectivity is reported separately from boundary-evidence classification.
-- Compatibility matrix now covers DSH `0.2.2-rc.1` on Windows and Ubuntu.
-- Installation instructions and download links point to `wxcvm/dsh-purge`, preserving original attribution.
-- CI passing does not replace a real desktop installation check. Release publishing remains manual.
+- Restore archived engagement workspaces without overwriting existing targets.
+- Add a pinned Windows Desktop updater with read-only checks and best-effort profile rollback.
+- Test the updater safely in the existing Windows compatibility matrix.
+- Publish SHA256SUMS.txt alongside the release ZIP.
+- Retain previous UI, runtime-diagnostic, environment-state and archive fixes.
+- Manual-only publishing and real Desktop acceptance boundaries remain unchanged.

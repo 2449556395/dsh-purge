@@ -4,7 +4,7 @@
 
 <h1 align="center">⚔️ DeepSeek Harness cybersecurity red-team tool (dsh-purge)</h1>
 
-<p align="center"><strong>Version 1.1.92-wxcvm.2</strong></p>
+<p align="center"><strong>Version 1.1.92-wxcvm.3</strong></p>
 
 <p align="center">
   <em>DeepSeek Harness jailbreak: every model, swap prompts per model. Default prompt for 小码酱. Please star ⭐ If you build on this, see Attribution required.</em>
@@ -167,6 +167,16 @@ Unmatched patches stay pending or skipped; nothing is rewritten blindly.
 
 ## Install
 
+### Updating an installed Windows Desktop fork
+
+From this fork's release package, run the pinned profile updater:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\update-desktop-fork.ps1 -DshHome "$env:USERPROFILE\.dsh"
+```
+
+Fully exit DSH Desktop, including the tray process. Supply the actual DSH_HOME if different. The updater targets only that profile, backs up profile metadata, attempts rollback on failure, and never patches or restarts DSH. Use `-CheckOnly` to verify the installed version and bundled UI files without changing them.
+
 **Install this maintained fork from `wxcvm/dsh-purge`.** The original author's repository remains credited and hosts historical versions, but does not include this fork's UI, archive, or diagnostics changes. Updating a standalone Git checkout does not update the plugin copy loaded by DSH Desktop.
 
 Follow the three steps below. **Do not use the plugin marketplace.** One-click install on [dsh-plugin.org](https://dsh-plugin.org) or in Settings → Plugin Market fails with `already queued: dsh-purge` and never runs a command. The name `dsh-purge` is not on the npm registry; do not `pnpm add dsh-purge`. If this machine only has pnpm, use the pnpm URL in step 2.
@@ -221,7 +231,7 @@ Success: `node_modules/dsh-purge/package.json` exists, `"dsh-purge"` is in that 
 For the desktop client you can also click the button (`dsh://` deep link; it still downloads the same tarball):
 
 <p align="center">
-  <a href="dsh://plugin/install?id=dsh-purge&name=dsh-purge&version=1.1.92-wxcvm.2&repo=wxcvm%2Fdsh-purge&permissions=%E7%B3%BB%E7%BB%9F%E6%8F%90%E7%A4%BA%E8%AF%8D%E6%B3%A8%E5%85%A5%2C%E6%9C%AC%E6%9C%BA%E8%A1%A5%E4%B8%81%2C%E8%AE%BE%E7%BD%AE%E9%A1%B5&downloadUrl=https%3A%2F%2Fcodeload.github.com%2Fwxcvm%2Fdsh-purge%2Ftar.gz%2Frefs%2Fheads%2Fmaster"><strong>Install in desktop client</strong></a>
+  <a href="dsh://plugin/install?id=dsh-purge&name=dsh-purge&version=1.1.92-wxcvm.3&repo=wxcvm%2Fdsh-purge&permissions=%E7%B3%BB%E7%BB%9F%E6%8F%90%E7%A4%BA%E8%AF%8D%E6%B3%A8%E5%85%A5%2C%E6%9C%AC%E6%9C%BA%E8%A1%A5%E4%B8%81%2C%E8%AE%BE%E7%BD%AE%E9%A1%B5&downloadUrl=https%3A%2F%2Fcodeload.github.com%2Fwxcvm%2Fdsh-purge%2Ftar.gz%2Frefs%2Fheads%2Fmaster"><strong>Install in desktop client</strong></a>
 </p>
 
 ### 3. Three more clicks after the command

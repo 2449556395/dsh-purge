@@ -39,3 +39,12 @@ test('English and Chinese installation instructions select this fork without del
     assert.ok(content.includes('YuJunZhiXue/dsh-purge'), 'original attribution retained')
   }
 })
+
+test('Windows Desktop installer pins the current release and supports rollback', () => {
+  const version = JSON.parse(read('../package.json')).version
+  const script = read('../scripts/update-desktop-fork.ps1')
+  assert.ok(script.includes("$version = '" + version + "'"))
+  assert.ok(script.includes('https://codeload.github.com/wxcvm/dsh-purge/tar.gz/refs/tags/v' + version))
+  assert.match(script, /pnpm install --frozen-lockfile --ignore-scripts/)
+  assert.match(script, /\[switch\]\$CheckOnly/)
+})

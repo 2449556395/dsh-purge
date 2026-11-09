@@ -4,7 +4,7 @@
 
 <h1 align="center">⚔️ DeepSeek Harness 网络安全红队工具（dsh-purge）</h1>
 
-<p align="center"><strong>Version 1.1.92-wxcvm.2</strong></p>
+<p align="center"><strong>Version 1.1.92-wxcvm.3</strong></p>
 
 <p align="center">
   <em>DeepSeek Harness 破甲：让所有模型都能破甲，不同模型可换不同提示词；默认提示词面向国模「小码酱」。Jailbreak for every model — swap prompts per model. 求 Star 收藏 ⭐ 如要二开，请查看署名要求部分</em>
@@ -183,6 +183,16 @@ Harness 不只是把问题交给模型。它还会在运行时改提示词、审
 
 ## 安装
 
+### 已装 Windows Desktop 的升级
+
+从本 fork 版本包中执行固定版本的升级脚本：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\update-desktop-fork.ps1 -DshHome "$env:USERPROFILE\.dsh"
+```
+
+运行前请完整退出 DSH Desktop（包括托盘进程）。如果实际 DSH_HOME 不是默认目录，请传入真实路径。脚本只操作所选 profile；安装失败时恢复 profile 配置和锁文件并尝试恢复依赖，不自动应用宿主补丁、不重启应用。运行后可增加 `-CheckOnly` 只读验证安装版本与 UI 文件。
+
 **本维护分支请从 `wxcvm/dsh-purge` 安装。** 原作者仓库仅供追溯来源及历史版本，不能代替本分支的新 UI、归档和诊断修复。更新前先确认 DSH 实际使用的 profile；独立 Git 工作区拉取新提交，不等于桌面插件已经更新。
 
 按下面三步走。**不要走插件市场**：[dsh-plugin.org](https://dsh-plugin.org) 或设置里的「插件市场」一键安装会报 `already queued: dsh-purge`，命令也走不成。npm 仓库没有 `dsh-purge` 这个名字，不要 `pnpm add dsh-purge`；本机只有 pnpm 时走第 2 步里的 pnpm 地址。
@@ -237,7 +247,7 @@ node node_modules/dsh-purge/scripts/ensure-profile-bundle.mjs
 桌面客户端也可以点按钮（`dsh://` 唤起，下的仍是同一份压缩包）：
 
 <p align="center">
-  <a href="dsh://plugin/install?id=dsh-purge&name=dsh-purge&version=1.1.92-wxcvm.2&repo=wxcvm%2Fdsh-purge&permissions=%E7%B3%BB%E7%BB%9F%E6%8F%90%E7%A4%BA%E8%AF%8D%E6%B3%A8%E5%85%A5%2C%E6%9C%AC%E6%9C%BA%E8%A1%A5%E4%B8%81%2C%E8%AE%BE%E7%BD%AE%E9%A1%B5&downloadUrl=https%3A%2F%2Fcodeload.github.com%2Fwxcvm%2Fdsh-purge%2Ftar.gz%2Frefs%2Fheads%2Fmaster"><strong>唤起客户端一键安装</strong></a>
+  <a href="dsh://plugin/install?id=dsh-purge&name=dsh-purge&version=1.1.92-wxcvm.3&repo=wxcvm%2Fdsh-purge&permissions=%E7%B3%BB%E7%BB%9F%E6%8F%90%E7%A4%BA%E8%AF%8D%E6%B3%A8%E5%85%A5%2C%E6%9C%AC%E6%9C%BA%E8%A1%A5%E4%B8%81%2C%E8%AE%BE%E7%BD%AE%E9%A1%B5&downloadUrl=https%3A%2F%2Fcodeload.github.com%2Fwxcvm%2Fdsh-purge%2Ftar.gz%2Frefs%2Fheads%2Fmaster"><strong>唤起客户端一键安装</strong></a>
 </p>
 
 ### 3. 装完还要做这三下

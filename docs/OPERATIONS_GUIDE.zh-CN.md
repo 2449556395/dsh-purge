@@ -184,3 +184,14 @@ _本文以当前仓库 UI 为依据。尚未在每一种 Windows 官方桌面构
 在作战台顶部点击 **检查更新**，新版会另外比较“实际插件目录”中的 `client.js` 和红队 UI 源文件与 GitHub `master` 的 Git blob；“不一致”只说明文件内容不同，既不能直接判断旧或新，也不代表应覆盖个人修改。先确认弹窗里的实际插件目录，按当前安装方式更新该副本，再**彻底重启 DSH**。仅更新独立 Git 工作区、仅刷新浏览器，都不一定会更新运行中的插件。
 
 如果“源码状态未知”，先确认 GitHub 可达、当前宿主插件确实可访问，然后查看实际插件目录。工作区的 `git status` 只说明该工作区本身，不代表宿主安装路径。
+
+
+## Desktop 固定版本更新与验收
+
+本维护 fork 的随包脚本为 `scripts/update-desktop-fork.ps1`。先完全退出 DSH Desktop（包括托盘进程），然后在发布包根目录执行：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\update-desktop-fork.ps1 -DshHome "$env:USERPROFILE\.dsh"
+```
+
+如果实际 DSH_HOME 在其他目录，要按实际路径修改；不要把独立 Git 工作区当作正在加载的插件目录。安装完成后完全重开 Desktop，再通过「管理 → 指南 → 运行中插件源码」检查实际目录、版本和差异，进入「技能库」「已归档靶标」核对界面。可用 `-CheckOnly` 做只读版本及入口文件检查。自动化 Windows 运行器只能验证脚本逻辑，不能替代真实桌面加载验收。

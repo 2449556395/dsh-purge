@@ -158,7 +158,7 @@ This repo is [Apache License 2.0](./LICENSE). Forks and redistributions must kee
 - **dsh 0.2.1-rc.5** (official desktop, host sealed inside `app.asar`): use **1.1.81**. After unpacking: **66 of 82 patches apply directly**, 47 files rewritten, `node --check` reports 0 failures; of the five desktop-shell patches #45/#82/#83/#84 match (#84 depends on #83's output) and #46's official update-script rewrite point was reworked upstream in rc.5, leaving one harmless no-op. While `app.asar` is still sealed, Apply unpacks to `resources\app` and restarts automatically.
 - **dsh 0.2.1-rc.2** (official desktop / official `dsh web`): use **1.1.81**. Fixes `{{cwd}}` / `[cwd]` crash, patch #40 match, dropped `toolFilter`, host `dsh-tools` resolve, hostFs fd, desktop helper self-kill, `file:` archive update, Ctrl+Enter steer.
 - **dsh 0.2.0-rc.2**: use **1.1.40** or newer; this line also installs.
-- **dsh 0.1.7** (incl. rc.1 / rc.2): use **1.1.39** or older — pick the tag on [Releases](https://github.com/YuJunZhiXue/dsh-purge/releases).
+- **dsh 0.1.7** (incl. rc.1 / rc.2): use **1.1.39** or older — pick the tag on [Releases](https://github.com/2449556395/dsh-purge/releases).
 - **dsh 0.2.1-rc.3 / rc.4**: not verified separately (patch patterns are shared with rc.2 / rc.5). Unmatched patches stay pending or skipped; nothing is rewritten blindly.
 
 Unmatched patches stay pending or skipped; nothing is rewritten blindly.
@@ -169,7 +169,7 @@ Unmatched patches stay pending or skipped; nothing is rewritten blindly.
 
 ### Updating an installed Windows Desktop fork
 
-From this fork's release package, run the pinned profile updater:
+From this fork's master build, run the profile updater:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\update-desktop-fork.ps1 -DshHome "$env:USERPROFILE\.dsh"
@@ -177,7 +177,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\update-desktop-fork.ps1 -DshH
 
 Fully exit DSH Desktop, including the tray process. Supply the actual DSH_HOME if different. The updater targets only that profile, backs up profile metadata, attempts rollback on failure, and never patches or restarts DSH. Use `-CheckOnly` to verify the installed version and bundled UI files without changing them.
 
-**Install this maintained fork from `wxcvm/dsh-purge`.** The original author's repository remains credited and hosts historical versions, but does not include this fork's UI, archive, or diagnostics changes. Updating a standalone Git checkout does not update the plugin copy loaded by DSH Desktop.
+**Install this maintained fork from `2449556395/dsh-purge`.** The original author's repository remains credited and hosts historical versions, but does not include this fork's UI, archive, or diagnostics changes. Updating a standalone Git checkout does not update the plugin copy loaded by DSH Desktop.
 
 Follow the three steps below. **Do not use the plugin marketplace.** One-click install on [dsh-plugin.org](https://dsh-plugin.org) or in Settings → Plugin Market fails with `already queued: dsh-purge` and never runs a command. The name `dsh-purge` is not on the npm registry; do not `pnpm add dsh-purge`. If this machine only has pnpm, use the pnpm URL in step 2.
 
@@ -197,7 +197,7 @@ Use `codeload.github.com`. Do not use `github.com/.../archive`: that 302 makes p
 **If you have `dsh`:**
 
 ```sh
-dsh plugin --profile web add https://codeload.github.com/wxcvm/dsh-purge/tar.gz/refs/heads/master
+dsh plugin --profile web add https://codeload.github.com/2449556395/dsh-purge/tar.gz/refs/heads/master
 ```
 
 Use `desktop` instead of `web` for the EXE. If this directory is already a clone, use `.` instead of the URL.
@@ -206,22 +206,22 @@ Use `desktop` instead of `web` for the EXE. If this directory is already a clone
 
 ```sh
 cd "$DSH_HOME/profiles/web"    # desktop: profiles/desktop
-pnpm add https://codeload.github.com/wxcvm/dsh-purge/tar.gz/refs/heads/master
+pnpm add https://codeload.github.com/2449556395/dsh-purge/tar.gz/refs/heads/master
 ```
 
 Windows PowerShell:
 
 ```powershell
 cd "$env:USERPROFILE\.dsh\profiles\web"   # desktop: profiles\desktop
-pnpm add https://codeload.github.com/wxcvm/dsh-purge/tar.gz/refs/heads/master
+pnpm add https://codeload.github.com/2449556395/dsh-purge/tar.gz/refs/heads/master
 ```
 
 `pnpm add` and `dsh plugin add` fetch the package; `postinstall` writes `dsh-purge` into `dsh.profile.bundles` and adds a body `insert` in the profile `cordis.patch.yml`. Without that insert the host never loads the plugin and no button appears. pnpm 11/12 skips install scripts (`ERR_PNPM_IGNORED_BUILDS`) unless you allow the build:
 
 ```sh
-pnpm add --allow-build=dsh-purge --allow-build=dsh-purge@https://codeload.github.com/wxcvm/dsh-purge/tar.gz/refs/heads/master https://codeload.github.com/wxcvm/dsh-purge/tar.gz/refs/heads/master
+pnpm add --allow-build=dsh-purge --allow-build=dsh-purge@https://codeload.github.com/2449556395/dsh-purge/tar.gz/refs/heads/master https://codeload.github.com/2449556395/dsh-purge/tar.gz/refs/heads/master
 # Already installed, warning only — the full specifier is required (name-only leaves "set this to true or false"):
-pnpm approve-builds dsh-purge@https://codeload.github.com/wxcvm/dsh-purge/tar.gz/refs/heads/master
+pnpm approve-builds dsh-purge@https://codeload.github.com/2449556395/dsh-purge/tar.gz/refs/heads/master
 # If bundles / insert are still missing:
 node node_modules/dsh-purge/scripts/ensure-profile-bundle.mjs
 ```
@@ -231,7 +231,7 @@ Success: `node_modules/dsh-purge/package.json` exists, `"dsh-purge"` is in that 
 For the desktop client you can also click the button (`dsh://` deep link; it still downloads the same tarball):
 
 <p align="center">
-  <a href="dsh://plugin/install?id=dsh-purge&name=dsh-purge&version=1.1.92-wxcvm.4&repo=wxcvm%2Fdsh-purge&permissions=%E7%B3%BB%E7%BB%9F%E6%8F%90%E7%A4%BA%E8%AF%8D%E6%B3%A8%E5%85%A5%2C%E6%9C%AC%E6%9C%BA%E8%A1%A5%E4%B8%81%2C%E8%AE%BE%E7%BD%AE%E9%A1%B5&downloadUrl=https%3A%2F%2Fcodeload.github.com%2Fwxcvm%2Fdsh-purge%2Ftar.gz%2Frefs%2Ftags%2Fv1.1.92-wxcvm.4"><strong>Install in desktop client</strong></a>
+  <a href="dsh://plugin/install?id=dsh-purge&name=dsh-purge&version=1.1.92-wxcvm.4&repo=2449556395%2Fdsh-purge&permissions=%E7%B3%BB%E7%BB%9F%E6%8F%90%E7%A4%BA%E8%AF%8D%E6%B3%A8%E5%85%A5%2C%E6%9C%AC%E6%9C%BA%E8%A1%A5%E4%B8%81%2C%E8%AE%BE%E7%BD%AE%E9%A1%B5&downloadUrl=https%3A%2F%2Fcodeload.github.com%2F2449556395%2Fdsh-purge%2Ftar.gz%2Frefs%2Fheads%2Fmaster"><strong>Install in desktop client</strong></a>
 </p>
 
 ### 3. Three more clicks after the command
@@ -258,7 +258,7 @@ Stop clicking the market. Use `dsh plugin add` or pnpm from step 2 again. If the
 
 ```sh
 dsh plugin --profile desktop remove dsh-purge
-dsh plugin --profile desktop add https://codeload.github.com/wxcvm/dsh-purge/tar.gz/refs/heads/master
+dsh plugin --profile desktop add https://codeload.github.com/2449556395/dsh-purge/tar.gz/refs/heads/master
 ```
 
 pnpm only:
@@ -266,7 +266,7 @@ pnpm only:
 ```sh
 cd "$DSH_HOME/profiles/desktop"
 pnpm remove dsh-purge
-pnpm add https://codeload.github.com/wxcvm/dsh-purge/tar.gz/refs/heads/master
+pnpm add https://codeload.github.com/2449556395/dsh-purge/tar.gz/refs/heads/master
 ```
 
 Swap `desktop` for `web` on Web. Then do step 3.
@@ -287,13 +287,13 @@ Install the DeepSeek Harness plugin `dsh-purge` into the Web profile only. Do no
 If `dsh` is on PATH:
 
 ```sh
-dsh plugin --profile web add https://codeload.github.com/wxcvm/dsh-purge/tar.gz/refs/heads/master
+dsh plugin --profile web add https://codeload.github.com/2449556395/dsh-purge/tar.gz/refs/heads/master
 ```
 
 If `dsh` is missing and pnpm is available, `cd` into `$DSH_HOME/profiles/web` (often `~/.dsh/profiles/web`) and run:
 
 ```sh
-pnpm add https://codeload.github.com/wxcvm/dsh-purge/tar.gz/refs/heads/master
+pnpm add https://codeload.github.com/2449556395/dsh-purge/tar.gz/refs/heads/master
 ```
 
 If this directory is already a clone and `dsh` exists, use `dsh plugin --profile web add .`. If neither `dsh` nor pnpm is available, tell the user and stop.
@@ -333,10 +333,10 @@ $cands | Select-Object -Unique | Where-Object { $_ -and (Test-Path (Join-Path $_
 **2. Put the plugin at `$DSH_HOME/plugins/dsh-purge`** (folder must be named `dsh-purge`, with a `package.json` whose `"name"` is `dsh-purge`).
 
 ```sh
-git clone https://github.com/wxcvm/dsh-purge.git "$DSH_HOME/plugins/dsh-purge"
+git clone https://github.com/2449556395/dsh-purge.git "$DSH_HOME/plugins/dsh-purge"
 ```
 
-Without git: download [master.tar.gz](https://codeload.github.com/wxcvm/dsh-purge/tar.gz/refs/heads/master), extract, rename `dsh-purge-master` → `dsh-purge`, and place it under `plugins`. If you already have a clone, copy the whole tree — not a few `.js` files.
+Without git: download [master.tar.gz](https://codeload.github.com/2449556395/dsh-purge/tar.gz/refs/heads/master), extract, rename `dsh-purge-master` → `dsh-purge`, and place it under `plugins`. If you already have a clone, copy the whole tree — not a few `.js` files.
 
 **3. Edit only that profile's `package.json` — back it up first.** Web → `$DSH_HOME/profiles/web/package.json`; desktop → `$DSH_HOME/profiles/desktop/package.json`. Add **only two things**, keeping every existing dependency and bundle:
 
@@ -618,14 +618,14 @@ If nothing is found, set `DSH_BASE` / `DSH_DESKTOP_INSTALL`. No files are change
 
 ## Releases
 
-The author's personal channel: [t.me/LLM_PoJia](https://t.me/LLM_PoJia). Notes and updates show up there. GitHub [Releases](https://github.com/YuJunZhiXue/dsh-purge/releases) still has older packages. The original may not be resold; forks must attribute.
+The author's personal channel: [t.me/LLM_PoJia](https://t.me/LLM_PoJia). Notes and updates show up there. GitHub [Releases](https://github.com/2449556395/dsh-purge/releases) still has older packages. The original may not be resold; forks must attribute.
 
 ## Notes
 
 - Scope is rendered copy, defaults, and runtime logic inside local `@deepseek-ai/*` packages, plus override files and rule sets under the harness home.
 - After an upgrade, unmatched originals show as skipped. Apply still completes, and those files are left unchanged.
 - Third-party plugin *source repos* outside `@deepseek-ai` are left alone (CMD silence may **best-effort** patch installed doctor / market / liangshen / mnemon at runtime).
-- Install from the GitHub tarball (the name is not on npm; skip the plugin market). With `dsh`: `dsh plugin --profile web add https://codeload.github.com/wxcvm/dsh-purge/tar.gz/refs/heads/master`. pnpm only: `pnpm add` that URL inside `$DSH_HOME/profiles/web`. Use `desktop` for the EXE. From this repo, `add .`.
+- Install from the GitHub tarball (the name is not on npm; skip the plugin market). With `dsh`: `dsh plugin --profile web add https://codeload.github.com/2449556395/dsh-purge/tar.gz/refs/heads/master`. pnpm only: `pnpm add` that URL inside `$DSH_HOME/profiles/web`. Use `desktop` for the EXE. From this repo, `add .`.
 
 ---
 

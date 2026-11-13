@@ -1,4 +1,4 @@
-# Upgrade the selected DeepSeek Harness profile to a pinned wxcvm fork release.
+# Upgrade the selected DeepSeek Harness profile to this fork's master build.
 # Does not apply host patches, delete targets, or restart the application.
 param(
   [string]$DshHome = '',
@@ -7,7 +7,7 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 $version = '1.1.92-wxcvm.4'
-$source = 'https://codeload.github.com/wxcvm/dsh-purge/tar.gz/refs/tags/v1.1.92-wxcvm.4'
+$source = 'https://codeload.github.com/2449556395/dsh-purge/tar.gz/refs/heads/master'
 
 if (-not $DshHome) {
   $candidates = @()
@@ -47,7 +47,7 @@ if ($CheckOnly) {
   return
 }
 if (-not (Get-Command pnpm -ErrorAction SilentlyContinue)) {
-  throw 'pnpm was not found. Install pnpm or use dsh plugin add with the pinned tag URL.'
+  throw 'pnpm was not found. Install pnpm or use dsh plugin add with the master tarball URL.'
 }
 
 # Preserve files that pnpm and postinstall may change in this profile.

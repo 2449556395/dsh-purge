@@ -9,6 +9,6 @@ test('published zip has a checksum generated from exactly the uploaded file', ()
 })
 
 test('fork only permits manual release dispatch on master', () => {
-  assert.match(workflow, /github\.repository == 'wxcvm\/dsh-purge' && github\.event_name == 'workflow_dispatch' && github\.ref == 'refs\/heads\/master'/)
+  assert.match(workflow, /github\.repository == '2449556395\/dsh-purge' && github\.event_name == 'workflow_dispatch' && github\.ref == 'refs\/heads\/master'/)
   assert.doesNotMatch(workflow, /startsWith\(github\.event\.head_commit\.message/)
 })

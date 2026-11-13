@@ -15,8 +15,8 @@ concurrency:
 
 jobs:
   release:
-    # 上游保持 master 自动发布；wxcvm fork 只允许在 master 上手动触发，避免每次合并发布。
-    if: github.repository == 'YuJunZhiXue/dsh-purge' || (github.repository == 'wxcvm/dsh-purge' && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/master')
+    # 本 fork 只允许在 master 上手动触发，避免每次合并发布。
+    if: github.repository == '2449556395/dsh-purge' && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -38,7 +38,7 @@ jobs:
           version="$(node -p "require('./package.json').version")"
           tag="v${version}"
           notes="release-notes.md"
-          if [ "$GITHUB_REPOSITORY" = "wxcvm/dsh-purge" ]; then
+          if [ "$GITHUB_REPOSITORY" = "2449556395/dsh-purge" ]; then
             notes="release-notes-wxcvm.md"
           fi
           first="$(head -n 1 "$notes" | tr -d '\r')"
@@ -57,7 +57,7 @@ jobs:
           archived_version="$(unzip -p "$zip" "dsh-purge-$version/package.json" |
             node -e "process.stdout.write(JSON.parse(require('fs').readFileSync(0,'utf8')).version)")"
           test "$archived_version" = "$version"
-          if [ "$GITHUB_REPOSITORY" = "wxcvm/dsh-purge" ]; then
+          if [ "$GITHUB_REPOSITORY" = "2449556395/dsh-purge" ]; then
             for file in client.js lib/redteam/client.js lib/redteam/store-core.js scripts/update-desktop-fork.ps1; do
               unzip -Z1 "$zip" | grep -Fx "dsh-purge-$version/$file" >/dev/null
             done

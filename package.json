@@ -62,11 +62,11 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/wxcvm/dsh-purge.git"
+    "url": "git+https://github.com/2449556395/dsh-purge.git"
   },
-  "homepage": "https://github.com/wxcvm/dsh-purge#readme",
+  "homepage": "https://github.com/2449556395/dsh-purge#readme",
   "bugs": {
-    "url": "https://github.com/wxcvm/dsh-purge/issues"
+    "url": "https://github.com/2449556395/dsh-purge/issues"
   },
   "dsh": {
     "bundle": {
@@ -85,9 +85,9 @@
     },
     "install": {
       "preferred": "tarball",
-      "tarball": "https://codeload.github.com/wxcvm/dsh-purge/tar.gz/refs/tags/v1.1.92-wxcvm.4",
-      "zip": "https://codeload.github.com/wxcvm/dsh-purge/zip/refs/tags/v1.1.92-wxcvm.4",
-      "git": "https://github.com/wxcvm/dsh-purge.git"
+      "tarball": "https://codeload.github.com/2449556395/dsh-purge/tar.gz/refs/heads/master",
+      "zip": "https://codeload.github.com/2449556395/dsh-purge/zip/refs/heads/master",
+      "git": "https://github.com/2449556395/dsh-purge.git"
     }
   },
   "publishConfig": {
